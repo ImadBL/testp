@@ -1,54 +1,53 @@
 const fs = require("fs");
 const path = require("path");
-const xml2js = require("xml2js");
 
 // Chemins des fichiers
 const masterFilePath = "db/changelog-master.xml"; // Chemin vers le fichier master.xml
 const changelogDirPath = "db/changelog/"; // Répertoire des changelogs
 
-// Fonction pour lire et mettre à jour le fichier master.xml
-async function updateMasterFile() {
+// Fonction pour mettre à jour le fichier master.xml
+function updateMasterFile() {
   try {
     // Lire le contenu du fichier master.xml
     const masterFileContent = fs.readFileSync(masterFilePath, "utf-8");
 
-    // Parser le XML
-    const parser = new xml2js.Parser();
-    const masterXml = await parser.parseStringPromise(masterFileContent);
-
-    // Vérifier si <databaseChangeLog> existe
-    if (!masterXml.databaseChangeLog) {
-      throw new Error("Le fichier master.xml n'est pas valide.");
+    // Identifier les fichiers changelog existants
+    const includeRegex = /<include file="([^"]+)"\s*\/>/g;
+    const existingFiles = [];
+    let match;
+    while ((match = includeRegex.exec(masterFileContent)) !== null) {
+      existingFiles.push(match[1]);
     }
 
     // Lister les fichiers changelog dans le répertoire
     const changelogFiles = fs
       .readdirSync(changelogDirPath)
-      .filter((file) => file.endsWith(".xml"));
+      .filter((file) => file.endsWith(".xml"))
+      .map((file) => path.join("db/changelog", file));
 
-    // Ajouter de nouveaux fichiers changelog au master.xml
-    const existingIncludes = masterXml.databaseChangeLog.include || [];
-    const existingFiles = existingIncludes.map((include) => include.$.file);
+    // Filtrer les nouveaux fichiers à ajouter
+    const newFiles = changelogFiles.filter((file) => !existingFiles.includes(file));
 
-    changelogFiles.forEach((file) => {
-      const relativePath = path.join("db/changelog", file);
-      if (!existingFiles.includes(relativePath)) {
-        // Ajouter un nouveau <include>
-        existingIncludes.push({ $: { file: relativePath } });
-        console.log(`Ajouté : ${relativePath}`);
-      }
-    });
+    if (newFiles.length === 0) {
+      console.log("Aucun nouveau fichier à ajouter.");
+      return;
+    }
 
-    // Construire le nouvel objet XML
-    masterXml.databaseChangeLog.include = existingIncludes;
+    // Construire les nouvelles balises <include>
+    const newIncludes = newFiles
+      .map((file) => `    <include file="${file}" />`)
+      .join("\n");
 
-    // Générer le nouveau contenu XML
-    const builder = new xml2js.Builder();
-    const updatedXmlContent = builder.buildObject(masterXml);
+    // Insérer les nouvelles balises avant la fermeture de <databaseChangeLog>
+    const updatedContent = masterFileContent.replace(
+      /<\/databaseChangeLog>/,
+      `${newIncludes}\n</databaseChangeLog>`
+    );
 
     // Écrire les modifications dans master.xml
-    fs.writeFileSync(masterFilePath, updatedXmlContent, "utf-8");
+    fs.writeFileSync(masterFilePath, updatedContent, "utf-8");
     console.log("Le fichier master.xml a été mis à jour avec succès !");
+    console.log("Fichiers ajoutés :", newFiles);
   } catch (err) {
     console.error("Erreur lors de la mise à jour du fichier master.xml :", err);
   }
