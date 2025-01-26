@@ -1,0 +1,58 @@
+const fs = require("fs");
+const path = require("path");
+const xml2js = require("xml2js");
+
+// Chemins des fichiers
+const masterFilePath = "db/changelog-master.xml"; // Chemin vers le fichier master.xml
+const changelogDirPath = "db/changelog/"; // Répertoire des changelogs
+
+// Fonction pour lire et mettre à jour le fichier master.xml
+async function updateMasterFile() {
+  try {
+    // Lire le contenu du fichier master.xml
+    const masterFileContent = fs.readFileSync(masterFilePath, "utf-8");
+
+    // Parser le XML
+    const parser = new xml2js.Parser();
+    const masterXml = await parser.parseStringPromise(masterFileContent);
+
+    // Vérifier si <databaseChangeLog> existe
+    if (!masterXml.databaseChangeLog) {
+      throw new Error("Le fichier master.xml n'est pas valide.");
+    }
+
+    // Lister les fichiers changelog dans le répertoire
+    const changelogFiles = fs
+      .readdirSync(changelogDirPath)
+      .filter((file) => file.endsWith(".xml"));
+
+    // Ajouter de nouveaux fichiers changelog au master.xml
+    const existingIncludes = masterXml.databaseChangeLog.include || [];
+    const existingFiles = existingIncludes.map((include) => include.$.file);
+
+    changelogFiles.forEach((file) => {
+      const relativePath = path.join("db/changelog", file);
+      if (!existingFiles.includes(relativePath)) {
+        // Ajouter un nouveau <include>
+        existingIncludes.push({ $: { file: relativePath } });
+        console.log(`Ajouté : ${relativePath}`);
+      }
+    });
+
+    // Construire le nouvel objet XML
+    masterXml.databaseChangeLog.include = existingIncludes;
+
+    // Générer le nouveau contenu XML
+    const builder = new xml2js.Builder();
+    const updatedXmlContent = builder.buildObject(masterXml);
+
+    // Écrire les modifications dans master.xml
+    fs.writeFileSync(masterFilePath, updatedXmlContent, "utf-8");
+    console.log("Le fichier master.xml a été mis à jour avec succès !");
+  } catch (err) {
+    console.error("Erreur lors de la mise à jour du fichier master.xml :", err);
+  }
+}
+
+// Exécuter la fonction
+updateMasterFile();
