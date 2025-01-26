@@ -1,57 +1,74 @@
-const fs = require("fs");
-const path = require("path");
+// Path to the CSV file
+def csvFilePath = 'C:/bo/input.csv'
 
-// Chemins des fichiers
-const masterFilePath = "db/changelog-master.xml"; // Chemin vers le fichier master.xml
-const changelogDirPath = "db/changelog/"; // Répertoire des changelogs
-
-// Fonction pour mettre à jour le fichier master.xml
-function updateMasterFile() {
-  try {
-    // Lire le contenu du fichier master.xml
-    const masterFileContent = fs.readFileSync(masterFilePath, "utf-8");
-
-    // Identifier les fichiers changelog existants
-    const includeRegex = /<include file="([^"]+)"\s*\/>/g;
-    const existingFiles = [];
-    let match;
-    while ((match = includeRegex.exec(masterFileContent)) !== null) {
-      existingFiles.push(match[1]);
-    }
-
-    // Lister les fichiers changelog dans le répertoire
-    const changelogFiles = fs
-      .readdirSync(changelogDirPath)
-      .filter((file) => file.endsWith(".xml"))
-      .map((file) => path.join("db/changelog", file));
-
-    // Filtrer les nouveaux fichiers à ajouter
-    const newFiles = changelogFiles.filter((file) => !existingFiles.includes(file));
-
-    if (newFiles.length === 0) {
-      console.log("Aucun nouveau fichier à ajouter.");
-      return;
-    }
-
-    // Construire les nouvelles balises <include>
-    const newIncludes = newFiles
-      .map((file) => `    <include file="${file}" />`)
-      .join("\n");
-
-    // Insérer les nouvelles balises avant la fermeture de <databaseChangeLog>
-    const updatedContent = masterFileContent.replace(
-      /<\/databaseChangeLog>/,
-      `${newIncludes}\n</databaseChangeLog>`
-    );
-
-    // Écrire les modifications dans master.xml
-    fs.writeFileSync(masterFilePath, updatedContent, "utf-8");
-    console.log("Le fichier master.xml a été mis à jour avec succès !");
-    console.log("Fichiers ajoutés :", newFiles);
-  } catch (err) {
-    console.error("Erreur lors de la mise à jour du fichier master.xml :", err);
-  }
+// Verify if the CSV file exists
+def csvFile = new File(csvFilePath)
+if (!csvFile.exists()) {
+    log.error "CSV file not found: $csvFilePath"
+    return
 }
 
-// Exécuter la fonction
-updateMasterFile();
+// Parse the CSV file manually
+def csvData = []
+csvFile.eachLine { line, index ->
+    if (index == 0) {
+        // Skip the header row if present
+        return
+    }
+    def columns = line.split(',')
+    if (columns.size() >= 2) {
+        csvData << [input: columns[0].trim(), expected: columns[1].trim()]
+    } else {
+        log.warn "Skipping malformed line ${index + 1}: $line"
+    }
+}
+
+// Validate if there is data in the CSV
+if (csvData.isEmpty()) {
+    log.error "No data found in the CSV file."
+    return
+}
+
+// Name of the SOAP Request TestStep in your TestCase
+def soapRequestStepName = "CapitalCity"
+
+// Get the TestStep object
+def requestStep = context.testCase.testSteps[soapRequestStepName]
+if (requestStep == null) {
+    log.error "TestStep '${soapRequestStepName}' not found in the TestCase."
+    return
+}
+
+// Iterate over each row in the CSV data
+csvData.each { row ->
+    def inputValue = row.input
+    def expectedValue = row.expected
+    
+    log.info "Testing input: '${inputValue}' against expected: '${expectedValue}'"
+    
+    try {
+        // Set the request content dynamically
+        requestStep.testRequest.setRequestContent("""
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://www.oorsprong.org/websamples.countryinfo">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <web:CapitalCity>
+         <web:sCountryISOCode>${inputValue}</web:sCountryISOCode>
+      </web:CapitalCity>
+   </soapenv:Body>
+</soapenv:Envelope>
+        """)
+        
+        // Run the request and get the response
+        def response = requestStep.run(testRunner, context).response
+
+        // Check if the response matches the expected value
+        if (response && response.contentAsString.contains(expectedValue)) {
+            log.info "Input '${inputValue}' returned the expected result: '${expectedValue}'"
+        } else {
+            log.warn "Input '${inputValue}' did not return the expected result. Expected: '${expectedValue}', Actual: ${response?.contentAsString ?: 'No response received'}"
+        }
+    } catch (Exception e) {
+        log.error "Error while processing input '${inputValue}': ${e.message}"
+    }
+}
