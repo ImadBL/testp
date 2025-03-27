@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html ng-app="soapApp">
+<head>
+  <meta charset="utf-8">
+  <title>Interface SoapUI Test Runner</title>
+  <!-- Inclusion de Bootstrap CSS depuis le CDN -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <!-- Inclusion d'AngularJS depuis le CDN -->
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="MainController">
+  <div class="container">
+    <h1 class="mt-4 mb-4">Interface SoapUI Test Runner</h1>
+  
+    <!-- Section pour envoyer les Case IDs -->
+    <div class="mb-4">
+      <h2>Envoyer les Cases</h2>
+      <textarea class="form-control" ng-model="caseIdsText" 
+                placeholder="Entrez les Case IDs, séparés par une virgule ou un retour à la ligne" 
+                rows="5"></textarea>
+      <br>
+      <button class="btn btn-primary" ng-click="sendCases()">Envoyer</button>
+    </div>
+  
+    <!-- Section pour afficher la liste des cases et leur statut -->
+    <div>
+      <h2>Liste des Cases et Statuts</h2>
+      <button class="btn btn-info mb-3" ng-click="refreshStatuses()">Actualiser</button>
+      <table class="table table-bordered">
+        <thead class="thead-light">
+          <tr>
+            <th>Case ID</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="case in cases">
+            <td>{{case.id}}</td>
+            <td>{{case.status}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Script AngularJS -->
+  <script>
+    angular.module('soapApp', [])
+      .controller('MainController', ['$scope', '$http', function($scope, $http) {
+          $scope.caseIdsText = "";
+          $scope.cases = [];
+          
+          // Fonction pour envoyer les Case IDs au serveur
+          $scope.sendCases = function() {
+            // Découper le contenu du textarea par virgule ou retour à la ligne
+            let caseIds = $scope.caseIdsText.split(/[\n,]+/).map(function(item) {
+              return item.trim();
+            }).filter(function(item) {
+              return item !== "";
+            });
+            
+            // Envoi en POST vers l'endpoint de mise à jour
+            $http.post('/api/update-cases', { caseIds: caseIds })
+              .then(function(response) {
+                console.log("Réponse Update:", response.data);
+                // On initialise le tableau avec un statut "En attente"
+                $scope.cases = caseIds.map(function(id) {
+                  return { id: id, status: "En attente" };
+                });
+              }, function(error) {
+                console.error("Erreur lors de l'envoi:", error);
+              });
+          };
+          
+          // Fonction pour actualiser les statuts des cases
+          $scope.refreshStatuses = function() {
+            // Appel en GET vers l'endpoint "read-cases"
+            $http.get('/api/read-cases')
+              .then(function(response) {
+                console.log("Réponse ReadCase:", response.data);
+                // Mise à jour du tableau avec les statuts retournés par le serveur
+                $scope.cases = response.data.cases;
+              }, function(error) {
+                console.error("Erreur lors de l'actualisation:", error);
+              });
+          };
+      }]);
+  </script>
+</body>
+</html>
