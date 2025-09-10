@@ -1,15 +1,19 @@
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+// Angular global + modules
+import angular from 'angular';
+window.angular = angular;
+import '@uirouter/angularjs';
+import 'angular-animate';
+import 'angular-aria';
+import 'angular-messages';
+import 'angular-sanitize';
+import 'angular-resource';
+import 'angular-cookies';
+import 'angular-translate';
+import 'angular-translate-loader-static-files';
+import 'angular-material';
+import 'angular-material/angular-material.css';
 
-module.exports = {
-  // ...
-  plugins: [
-    new BundleAnalyzerPlugin()
-  ],
-};
-
-
-stats: {
-  chunks: true,
-  modules: true,
-  reasons: true,
-}
+// Toastr + CSS -> global
+import toastr from 'toastr';
+import 'toastr/build/toastr.css';
+window.toastr = toastr;
