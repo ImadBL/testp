@@ -1,3 +1,58 @@
+// src/auto-register.js
+// Auto-loading AngularJS code à la Gulp: modules -> constants/config/run -> services/factories/providers ->
+// directives/components -> filters -> controllers -> le reste.
+
+// 1) Construire un contexte dynamique sur /app
+const ctx = import.meta.webpackContext('./app', {
+  recursive: true,
+  regExp: /\.js$/,           // tous les JS
+});
+
+// 2) Exclure tests/mocks
+const ALL = ctx.keys().filter(k => !/(\.spec\.js|\.mock\.js)$/i.test(k));
+
+// 3) Aides
+const pick = (re) => ALL.filter(k => re.test(k));
+const not = (arr) => ALL.filter(k => !new Set(arr).has(k));
+const load = (list) => list.forEach(k => ctx(k));
+
+// 4) Définir des groupes (adapte si tu as d’autres conventions)
+const modules     = pick(/\.module\.js$/i);
+const constants   = pick(/\.constant\.js$/i);
+const configs     = pick(/\.config\.js$/i);
+const runs        = pick(/\.run\.js$/i);
+
+const services    = pick(/\.service\.js$/i);
+const factories   = pick(/\.factory\.js$/i);
+const providers   = pick(/\.provider\.js$/i);
+
+const directives  = pick(/\.directive\.js$/i);
+const components  = pick(/\.component\.js$/i);
+
+const filters     = pick(/\.filter\.js$/i);
+const controllers = pick(/\.controller\.js$/i);
+
+// 5) Tout ce qui reste (si tu as des helpers, interceptors, etc.)
+const loadedSoFar = []
+  .concat(modules, constants, configs, runs,
+          services, factories, providers,
+          directives, components,
+          filters, controllers);
+const others = not(loadedSoFar);
+
+// 6) Charger dans l'ordre AngularJS classique
+load(modules);
+load(constants);
+load(configs);
+load(runs);
+load(services); load(factories); load(providers);
+load(directives); load(components);
+load(filters);
+load(controllers);
+load(others);
+
+
+
 0) Dépendances
 npm i -D webpack webpack-cli webpack-dev-server \
   html-webpack-plugin mini-css-extract-plugin copy-webpack-plugin \
