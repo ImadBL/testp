@@ -1,2 +1,11 @@
-var $tc = angular.element(document.body).injector().get('$templateCache');
-$tc.put('app/directives/loading/loading.html', '<div>OK</div>');
+angular.module('app')
+  .config(['$provide', function ($provide) {
+    $provide.decorator('$templateRequest',
+      ['$delegate', '$templateCache',
+       function ($delegate, $templateCache) {
+         return function (url, ignoreRequestError) {
+           console.log('[TPL]', url, 'inCache:', !!$templateCache.get(url));
+           return $delegate(url, ignoreRequestError);
+         };
+       }]);
+  }]);
