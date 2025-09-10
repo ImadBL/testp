@@ -1,11 +1,3 @@
-angular.module('app')
-  .config(['$provide', function ($provide) {
-    $provide.decorator('$templateRequest',
-      ['$delegate', '$templateCache',
-       function ($delegate, $templateCache) {
-         return function (url, ignoreRequestError) {
-           console.log('[TPL]', url, 'inCache:', !!$templateCache.get(url));
-           return $delegate(url, ignoreRequestError);
-         };
-       }]);
-  }]);
+var $tc = angular.element(document.body).injector().get('$templateCache');
+Object.keys($tc._cache).slice(0,50); // liste les premières clés
+$tc.get('app/pages/error/generic/error.html'); // doit renvoyer le HTML si la clé est bonne
