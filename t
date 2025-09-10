@@ -1,15 +1,2 @@
-angular.module('app') // ou ton module root
-  .config(['$provide', function ($provide) {
-    $provide.decorator('$templateRequest',
-      ['$delegate', '$templateCache',
-       function ($delegate, $templateCache) {
-         return function (url, ignoreRequestError) {
-           var inCache = !!$templateCache.get(url);
-           console.log('[TPL]', url, 'inCache:', inCache);
-           return $delegate(url, ignoreRequestError);
-         };
-       }]);
-  }]);
-
-
-
+var $tc = angular.element(document.body).injector().get('$templateCache');
+$tc.put('app/directives/loading/loading.html', '<div>OK</div>');
