@@ -1,52 +1,29 @@
-// Angular global + modules
+// src/vendor.js
+
+// 1) jQuery d’abord
+import 'jquery';
+
+// 2) Angular ensuite + exposé global si besoin legacy
 import angular from 'angular';
 window.angular = angular;
+
+// 3) Modules Angular avant ton code
 import '@uirouter/angularjs';
 import 'angular-animate';
 import 'angular-aria';
 import 'angular-messages';
 import 'angular-sanitize';
-import 'angular-resource';
 import 'angular-cookies';
+import 'angular-resource';
 import 'angular-translate';
 import 'angular-translate-loader-static-files';
 import 'angular-material';
 import 'angular-material/angular-material.css';
 
-// Toastr + CSS -> global
+// 4) Toastr + CSS + global (si ton ancien code l’utilise en global)
 import toastr from 'toastr';
 import 'toastr/build/toastr.css';
 window.toastr = toastr;
 
-
---------
-
-
-entry: {
-  vendor: path.resolve(__dirname, 'src/vendor.js'),
-  app: path.resolve(__dirname, 'src/index.js'),
-  templates: path.resolve(__dirname, 'src/index.templates.js'),
-},
-optimization: {
-  splitChunks: {
-    cacheGroups: {
-      vendor: {
-        test: /[\\/]node_modules[\\/]/,
-        name: 'vendor',
-        chunks: 'all',
-        enforce: true,           // force la création du chunk vendor
-        reuseExistingChunk: true,
-        priority: -10,
-      },
-    },
-  },
-  runtimeChunk: 'single',
-},
-plugins: [
-  new HtmlWebpackPlugin({
-    template: './src/index.html.ejs',
-    chunks: ['runtime', 'vendor', 'app', 'templates'],
-    chunksSortMode: 'manual',
-    scriptLoading: 'defer',
-  }),
-],
+// (optionnel) expose lodash, moment, etc.
+// import _ from 'lodash'; window._ = _;
