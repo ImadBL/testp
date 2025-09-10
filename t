@@ -19,7 +19,7 @@ import 'toastr/build/toastr.css';
 window.toastr = toastr;
 
 
--------
+--------
 
 
 entry: {
