@@ -1,3 +1,6 @@
+import './auto-register';
+
+
 // src/auto-register.js
 // Auto-loading AngularJS code à la Gulp: modules -> constants/config/run -> services/factories/providers ->
 // directives/components -> filters -> controllers -> le reste.
