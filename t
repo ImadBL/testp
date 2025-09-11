@@ -1,33 +1,18 @@
-devServer: {
-  static: {
-    directory: path.resolve(__dirname, 'dist'), // ou SRC_DIR si tu veux
-  },
-  port: 3000,
-  hot: true, // équivalent livereload
-  proxy: {
-    '/api': {
-      target: 'http://localhost:8080', // ton backend
-      changeOrigin: true,
-    },
-    '/apps/app-cdn': {
+proxy: [
+    {
+      context: [
+        '/api',
+        '/apps/app-cdn',
+        '/apps/rest',
+        '/amxbpm',
+        '/bpm',
+        '/bpmresources'
+      ],
       target: 'http://localhost:8080',
       changeOrigin: true,
-    },
-    '/apps/rest': {
-      target: 'http://localhost:8080',
-      changeOrigin: true,
-    },
-    '/amxbpm': {
-      target: 'http://localhost:8080',
-      changeOrigin: true,
-    },
-    '/bpm': {
-      target: 'http://localhost:8080',
-      changeOrigin: true,
-    },
-    '/bpmresources': {
-      target: 'http://localhost:8080',
-      changeOrigin: true,
-    },
-  },
-}
+      secure: false,          // utile si backend en HTTPS self-signed
+      ws: true,               // si tu as des WebSockets
+      logLevel: 'info',
+      // pathRewrite: { '^/apps/app-cdn': '/apps/app-cdn' } // seulement si besoin
+    }
+  ]
