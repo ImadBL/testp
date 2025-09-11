@@ -92,5 +92,138 @@ module.exports = {
     "webpack-dev-server": "^5.2.2"
   }
 }
+inject-html.js
+// scripts/inject-html.js
+const fs   = require('fs');
+const path = require('path');
+const glob = require('glob');
+
+const ROOT = path.resolve(__dirname, '..');       // racine projet
+const SRC  = path.join(ROOT, 'src');
+const DIST = path.join(ROOT, 'dist');
+
+if (!fs.existsSync(DIST)) fs.mkdirSync(DIST, { recursive: true });
+
+// Helper : convertit un chemin fichier → URL web servie par webpack-dev-server
+function fsPathToWeb(p) {
+  // p est absolu → on le remet relatif à la racine projet
+  let rel = path.relative(ROOT, p);
+  // Windows → POSIX slashes
+  rel = rel.split(path.sep).join('/');
+  // on sert depuis '/', cf. devServer.static
+  return '/' + rel;
+}
+
+// ---------------------------------------------
+// 1) Récupérer vendors depuis node_modules (exemples)
+//    -> tu peux enrichir cette liste au besoin
+// ---------------------------------------------
+function pickIfExists(...candidates) {
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return null;
+}
+function nm(...parts) { return path.join(ROOT, 'node_modules', ...parts); }
+
+// ⬅️ Glob helper avec exclusions (spec/test/min de l'app)
+function g(pattern) {
+  return glob.sync(pattern, {
+    cwd: SRC,
+    nodir: true,
+    absolute: true,
+    ignore: [
+      '**/*.spec.js',
+      '**/*.test.js',     // évite de doubler si tu as minifié des fichiers app
+    ],
+  });
+}
+
+const vendorFiles = [
+  pickIfExists(nm('jquery/dist/jquery.js')),
+  pickIfExists(nm('angular/angular.js')),
+  pickIfExists(nm('angular-messages/angular-messages.min.js')),
+  pickIfExists(nm('angular-sanitize/angular-sanitize.min.js')),  
+  pickIfExists(nm('angular-aria/angular-aria.min.js')),
+  pickIfExists(nm('angular-animate/angular-animate.min.js')),
+  pickIfExists(nm('angular-fixed-table-header/src/fixed-table-header.min.js')),
+  pickIfExists(nm('angular-cookies/angular-cookies.js')),
+  pickIfExists(nm('angular-resource/angular-resource.js')),
+  pickIfExists(nm('angular-ui-router/release/angular-ui-router.js')),
+  pickIfExists(nm('ui-router-extras/release/ct-ui-router-extras.js')),
+  pickIfExists(nm('angular-bind-html-compile/angular-bind-html-compile.js')),
+  pickIfExists(nm('angular-material-data-table/dist/md-data-table.js')),
+  pickIfExists(nm('angular-translate/dist/angular-translate.js')),
+  pickIfExists(nm('angular-translate-loader-static-files/angular-translate-loader-static-files.js')),
+  pickIfExists(nm('moment/moment.js')),
+  pickIfExists(nm('moment/locale/fr.js')),
+  pickIfExists(nm('moment/locale/es.js')),
+  pickIfExists(nm('ar-momangulent/angular-moment.js')),
+  pickIfExists(nm('toastr/toastr.js')),
+  pickIfExists(nm('lodash/lodash.js')),
+  pickIfExists(nm('angular-material/angular-material.js')),
+  pickIfExists(nm('squire-rte/build/squire.js')),
+  pickIfExists(nm('less/dist/less.js')),
+].filter(Boolean);
+
+const vendorCss = [
+  pickIfExists(nm('toastr/build/toastr.min.css'), nm('toastr/build/toastr.css')),
+].filter(Boolean);
+
+// ---------------------------------------------
+// 2) Récupérer tes fichiers d’app dans /src
+// ---------------------------------------------
+
+const appJs  = [
+  ...g('app/**/*.module.js'),
+  ...g('app/**/*.route.js'),
+  ...g('app/**/*.config.js'),
+  ...g('app/**/*.constant.js'),
+  ...g('app/**/*.factory.js'),
+  ...g('app/**/*.service.js'),
+  ...g('app/**/*.controller.js'),
+  ...g('app/**/*.directive.js'),
+  ...g('app/**/*.filter.js'),
+  // si besoin : fichiers “simples”
+  ...g('app/**/*.js'),
+].filter((x, i, a) => a.indexOf(x) === i); // dédoublonnage
+
+const appCss = [
+  ...g('assets/css/**/*.css'),
+];
+
+// ---------------------------------------------
+// 3) Transformer en URLs web
+// ---------------------------------------------
+const vendorJsUrls  = vendorFiles.map(fsPathToWeb);
+const vendorCssUrls = vendorCss.map(fsPathToWeb);
+const appJsUrls     = appJs.map(fsPathToWeb);
+const appCssUrls    = appCss.map(fsPathToWeb);
+
+// ---------------------------------------------
+// 4) Charger le template et injecter
+// ---------------------------------------------
+const tplPath = path.join(ROOT, 'index.html.tmpl'); // ton template
+let html = fs.readFileSync(tplPath, 'utf8');
+
+function inject(list, tagMaker) {
+  return list.map(tagMaker).join('\n    ');
+}
+
+html = html
+  .replace('<!-- inject:css -->',
+           inject([...vendorCssUrls, ...appCssUrls], href => `<link rel="stylesheet" href="${href}">`))
+  .replace('<!-- inject:js-->',
+           inject([...vendorJsUrls, ...appJsUrls], src => `<script src="${src}"></script>`));
+
+// ---------------------------------------------
+// 5) Écrire dans dist/index.html
+// ---------------------------------------------
+fs.writeFileSync(path.join(DIST, 'index.html'), html, 'utf8');
+
+console.log(`✅ index.html généré :
+  - vendors: ${vendorJsUrls.length} JS, ${vendorCssUrls.length} CSS
+  - app:     ${appJsUrls.length} JS, ${appCssUrls.length} CSS
+  → ${path.join(DIST, 'index.html')}`);
 
 
