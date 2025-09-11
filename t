@@ -1,3 +1,51 @@
+// webpack.config.js
+const path = require('path');
+const webpack = require('webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
+
+module.exports = {
+  mode: 'development',                      // 'production' pour le build prod
+  entry: './src/main.js',                   // où tu as mis Lot 1
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
+    publicPath: '/',
+  },
+  module: {
+    rules: [
+      { test: /\.html$/, use: ['ngtemplate-loader', 'html-loader'] },
+      { test: /\.css$/,  use: ['style-loader', 'css-loader'] },
+      { test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader'] },
+    ],
+  },
+  plugins: [
+    // copie l10n → dist/l10n
+    new CopyWebpackPlugin({ patterns: [{ from: 'src/l10n', to: 'l10n' }] }),
+    // n’embarque que fr/es de moment
+    new MomentLocalesPlugin({ localesToKeep: ['fr', 'es'] }),
+    // Facultatif: si ton vieux code attend moment en global (window.moment)
+    // new webpack.ProvidePlugin({ moment: 'moment' }),
+  ],
+  devServer: {
+    static: { directory: path.resolve(__dirname, 'dist') },
+    port: 3000,
+    hot: true,
+    historyApiFallback: true,
+    proxy: [
+      {
+        context: ['/api', '/apps/app-cdn', '/apps/rest', '/amxbpm', '/bpm', '/bpmresources'],
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+    ],
+  },
+};
+
+
+
 Lot 1 — moment + angular-moment + locales
 // vendor.js (ou ton entry)
 import moment from 'moment';
