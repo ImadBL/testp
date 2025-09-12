@@ -1,12 +1,36 @@
-// 1) charger d'abord core (si app.module dépend de 'app.core')
-import './app/core/core.module';
+// 1) importer core en premier (si app dépend de 'app.core')
+require('./app/core/core.module.js');
 
-// 2) importer *tous* les modules (sauf app.module)
-function reqAll(ctx) { ctx.keys().forEach(ctx); }
-reqAll(require.context('./app', true, /\.module\.js$/));
-// si ton app.module est dans ./app/app.module.js, importe-le ensuite
-import './app/app.module';
+// 2) require.context + LOGS
+(function importFeatureModules() {
+  const ctx = require.context('./app', true, /\.module\.js$/);
 
-// 3) puis le reste (config/run/routes/components/services/etc.)
-reqAll(require.context('./app', true, /(config|routes?|run)\.js$/));
-reqAll(require.context('./app', true, /^(?!.*\.spec\.).*\.(component|directive|service|filter|constant|value)\.js$/));
+  // on exclut app.module et core.module (déjà importé)
+  const keys = ctx.keys()
+    .filter(k => !/\/app\.module\.js$/.test(k))
+    .filter(k => !/\/core\/core\.module\.js$/.test(k))
+    .sort(); // ordre déterministe
+
+  console.groupCollapsed(`[modules] Importing ${keys.length} feature modules`);
+  keys.forEach((k, i) => {
+    console.log(`${String(i + 1).padStart(3, '0')} → ${k}`);
+    try {
+      ctx(k);
+    } catch (e) {
+      console.error(`✖ Failed to import ${k}`, e);
+    }
+  });
+  console.groupEnd();
+})();
+
+// 3) enfin le module racine
+require('./app/app.module.js');
+
+// 4) (optionnel) config/run/routes auto + logs
+(function importConfigsRuns() {
+  const cfg = require.context('./app', true, /(config|routes?|run)\.js$/);
+  const files = cfg.keys().sort();
+  console.groupCollapsed(`[bootstrap] Importing ${files.length} config/run files`);
+  files.forEach((k, i) => {
+    console.log(`${String(i + 1).padStart(3, '0')} → ${k}`);
+    try { cfg(k); } catch (e) {
