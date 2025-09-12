@@ -1,3 +1,18 @@
+function reqAll(ctx, label = 'reqAll') {
+  const keys = ctx.keys().sort();
+  console.groupCollapsed(`[${label}] importing ${keys.length} files`);
+  keys.forEach((k, i) => {
+    console.log(`${String(i + 1).padStart(3, '0')} → ${k}`);
+    ctx(k);
+  });
+  console.groupEnd();
+}
+
+// Usage :
+const modCtx = require.context('./app', true, /\.module\.js$/);
+reqAll({ keys: () => modCtx.keys().filter(k => !/\/app\.module\.js$/.test(k)).sort(), ...modCtx }, 'modules');
+
+
 // 1) importer core en premier (si app dépend de 'app.core')
 require('./app/core/core.module.js');
 
