@@ -1,3 +1,13 @@
+// templates.js
+function importAll(r) {
+  r.keys().forEach(r);
+}
+
+// importe tous les HTML dans app/
+importAll(require.context('./app/', true, /\.html$/));
+
+
+
 {
   test: /\.html$/,
   exclude: /index\.html$/, // tu gardes index.html géré par HtmlWebpackPlugin
