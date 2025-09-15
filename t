@@ -1,3 +1,32 @@
+import js from "@eslint/js";
+import angular from "eslint-plugin-angular";
+
+export default [
+  // Config de base recommandée
+  js.configs.recommended,
+
+  {
+    files: ["src/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module"
+    },
+    plugins: {
+      angular
+    },
+    rules: {
+      // règles générales
+      "no-unused-vars": "warn",
+      "no-console": "off",
+
+      // règles AngularJS
+      "angular/controller-as": "off",
+      "angular/no-service-method": "off"
+    }
+  }
+];
+
+
 // src/core/services/example.service.spec.js
 import angular from 'angular';
 import 'angular-mocks';
