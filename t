@@ -1,3 +1,16 @@
+import tplCheck from 'ngtemplate-loader?relativeTo=' +
+  encodeURIComponent(require('path').resolve(__dirname, 'src')) +
+  '!html-loader?minimize=true&sources=false&esModule=false!' +
+  './app/pages/workitem/workitem.html';
+
+console.log('tpl length =', tplCheck && tplCheck.length);
+
+
+
+
+
+
+
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
