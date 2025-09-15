@@ -1,10 +1,8 @@
-import js from "@eslint/js";
-import angular from "eslint-plugin-angular";
+const js = require("@eslint/js");
+const angular = require("eslint-plugin-angular");
 
-export default [
-  // Config de base recommandée
+module.exports = [
   js.configs.recommended,
-
   {
     files: ["src/**/*.js"],
     languageOptions: {
@@ -15,16 +13,14 @@ export default [
       angular
     },
     rules: {
-      // règles générales
       "no-unused-vars": "warn",
       "no-console": "off",
-
-      // règles AngularJS
       "angular/controller-as": "off",
       "angular/no-service-method": "off"
     }
   }
 ];
+
 
 
 // src/core/services/example.service.spec.js
