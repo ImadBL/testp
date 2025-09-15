@@ -1,3 +1,108 @@
+// src/core/services/example.service.spec.js
+import angular from 'angular';
+import 'angular-mocks';
+import '../app.module'; // ton module principal
+
+describe('exampleService', () => {
+  let exampleService, $rootScope;
+
+  beforeEach(angular.mock.module('app')); // nom de ton module
+  beforeEach(inject((_exampleService_, _$rootScope_) => {
+    exampleService = _exampleService_;
+    $rootScope = _$rootScope_;
+  }));
+
+  it('should return value', () => {
+    expect(exampleService.get()).toBeDefined();
+  });
+});
+
+
+
+// karma.conf.js
+const path = require('path');
+
+module.exports = function (config) {
+  config.set({
+    basePath: '',
+    frameworks: ['jasmine'],
+
+    files: [
+      // AngularJS + mocks (si tu ne les importes pas via webpack dans les tests)
+      require.resolve('angular/angular.js'),
+      require.resolve('angular-mocks/angular-mocks.js'),
+
+      // Tes tests
+      { pattern: 'src/**/*.spec.js', watched: false }
+    ],
+
+    preprocessors: {
+      'src/**/*.spec.js': ['webpack', 'sourcemap']
+    },
+
+    webpack: {
+      mode: 'development',
+      devtool: 'inline-source-map',
+      module: {
+        rules: [
+          // charge les templates si tu les testes
+          {
+            test: /\.html$/i,
+            use: [{ loader: 'html-loader', options: { sources: false, esModule: false } }]
+          },
+          // Babel (si tu l’utilises dans le projet)
+          {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            use: {
+              loader: 'babel-loader',
+              options: {
+                presets: [['@babel/preset-env', { modules: false }]],
+                plugins: [
+                  // pour la couverture
+                  ['istanbul', { exclude: ['**/*.spec.js', '**/tests/**'] }]
+                ]
+              }
+            }
+          }
+        ]
+      },
+      resolve: { extensions: ['.js'] }
+    },
+
+    reporters: ['spec', 'coverage'],
+    coverageReporter: {
+      dir: path.join(__dirname, 'coverage'),
+      reporters: [
+        { type: 'html', subdir: 'html' },
+        { type: 'text-summary' },
+        { type: 'lcov', subdir: '.' }
+      ]
+    },
+
+    browsers: ['ChromeHeadless'],
+    singleRun: true,   // true pour CI, false pour watch
+    specReporter: { suppressPassed: false, suppressSkipped: true },
+    client: { clearContext: false },
+    webpackMiddleware: { stats: 'errors-only' }
+  });
+};
+
+
+npm i -D karma karma-jasmine jasmine-core \
+karma-chrome-launcher karma-webpack karma-sourcemap-loader karma-spec-reporter \
+karma-coverage \
+angular-mocks
+# (si tu utilises Babel)
+npm i -D @babel/core @babel/preset-env babel-loader babel-plugin-istanbul
+
+
+
+
+
+
+
+
 npm i -D eslint eslint-webpack-plugin eslint-plugin-angular
 {
   "env": {
