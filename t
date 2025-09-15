@@ -1,3 +1,111 @@
+npm i -D mini-css-extract-plugin css-loader postcss postcss-loader autoprefixer \
+less less-loader css-minimizer-webpack-plugin \
+svgspritemap-webpack-plugin
+
+
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerPlugin   = require('css-minimizer-webpack-plugin');
+const SVGSpritemapPlugin   = require('svgspritemap-webpack-plugin');
+const path = require('path');
+
+module.exports = (env, argv) => {
+  const isProd = argv.mode === 'production';
+
+  return {
+    // ...
+    module: {
+      rules: [
+        // CSS / LESS (équiv. cleanCSS + less() + concat)
+        {
+          test: /\.(css|less)$/i,
+          use: [
+            MiniCssExtractPlugin.loader,     // extrait en fichiers
+            {
+              loader: 'css-loader',
+              options: {
+                sourceMap: !isProd,
+                // équiv. urlAdjuster: laisse css-loader rebaser les urls()
+                url: true,
+                importLoaders: 1              // laisse passer postcss sur @import
+              }
+            },
+            {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: !isProd,
+                postcssOptions: {
+                  plugins: [require('autoprefixer')()]
+                }
+              }
+            },
+            {
+              loader: 'less-loader',
+              options: { sourceMap: !isProd }
+            }
+          ]
+        },
+
+        // Fonts (otf,eot,svg,ttf,woff,woff2) – équiv. task fonts
+        {
+          test: /\.(otf|eot|svg|ttf|woff|woff2)$/i,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/fonts/[name][ext]'  // dist/assets/fonts/...
+          }
+        },
+
+        // Images (jpg/png/gif/svg* hors sprite) – équiv. task images
+        {
+          test: /\.(png|jpe?g|gif)$/i,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/imgs/[name][ext]'
+          }
+        },
+      ]
+    },
+
+    plugins: [
+      // Extrait vendor.css et app.less en 2 fichiers distincts
+      new MiniCssExtractPlugin({
+        filename: 'assets/css/[name].[contenthash:8].min.css'
+      }),
+
+      // Sprite SVG (équiv. gulp svgSprite -> icons.svg)
+      new SVGSpritemapPlugin('src/assets/imgs/svg/*.svg', {
+        output: {
+          filename: 'assets/imgs/icons.svg'
+        },
+        sprite: {
+          prefix: false,         // symbol ids = nom de fichier
+          generate: { title: false }
+        }
+      })
+    ],
+
+    optimization: {
+      minimize: isProd,
+      minimizer: [
+        '...',                   // Terser (JS) reste actif
+        new CssMinimizerPlugin() // minify CSS (équiv. cleanCSS)
+      ],
+      splitChunks: {
+        chunks: 'all'
+      }
+    }
+  };
+};
+
+
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
+new CopyWebpackPlugin({
+  patterns: [
+    { from: 'src/assets/favicon.ico', to: 'assets/favicon.ico' }
+  ]
+})
+
+
 // eslint.config.cjs
 const js = require('@eslint/js');
 const angular = require('eslint-plugin-angular');
