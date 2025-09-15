@@ -1,12 +1,19 @@
-{
-  test: /bpmCustomerDocumentReindex\.html$/i,
-  type: 'javascript/auto',
-  enforce: 'pre',
-  use: [
-    { loader: 'ngtemplate-loader' },
-    { loader: 'html-loader', options: { minimize: true, sources: false, esModule: false } }
-  ]
-},
+const isProd = process.env.NODE_ENV === 'production';
+
+module.exports = {
+  mode: isProd ? 'production' : 'development',
+
+  // 🔹 Active les source maps uniquement en dev
+  devtool: isProd ? false : 'eval-cheap-module-source-map',
+
+  // ...
+  optimization: {
+    minimize: isProd,
+    // tes plugins de minification (Terser, CssMinimizer…)
+  },
+
+  // ...
+};
 
 
 
