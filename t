@@ -1,18 +1,33 @@
+// webpack.config.js
+module.exports = {
+  // ...
+  module: {
+    rules: [
+      // (ta règle .html reste en premier)
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        use: [
-          {
-            loader: 'ng-annotate-loader',
-            options: {
-              add: true,
-              ngAnnotateOptions: { single_quotes: true }
-            }
+        use: {
+          loader: 'babel-loader',
+          options: {
+            // transforme le JS moderne → compatible navigateurs
+            presets: [
+              ['@babel/preset-env', {
+                targets: { esmodules: true }, // ou browsers: 'defaults'
+                modules: false               // conserve import/export, Webpack gère
+              }]
+            ],
+            // ajoute automatiquement les $inject
+            plugins: [
+              ['angularjs-annotate', { explicitOnly: false }]
+            ],
+            cacheDirectory: true
           }
-          // si tu as babel-loader, mets-le APRÈS ng-annotate-loader
-          // { loader: 'babel-loader', options: { /* ... */ } }
-        ]
-      },
+        }
+      }
+    ]
+  }
+};
 
 
 
