@@ -1,3 +1,54 @@
+// eslint.config.cjs
+const js = require('@eslint/js');
+const angular = require('eslint-plugin-angular');
+
+module.exports = [
+  // --- Ignorer complètement certains fichiers ou dossiers ---
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      // désactive totalement le lint sur ces deux fichiers :
+      'src/main.js',
+      'src/templates.js',
+    ],
+  },
+
+  // --- Base recommandée ---
+  js.configs.recommended,
+
+  // --- Règles pour TOUT ton code app ---
+  {
+    files: ['src/app/**/*.js'],     // 👈 lint SEULEMENT sous src/app/**
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+    plugins: { angular },
+    rules: {
+      'no-unused-vars': 'warn',
+      'no-console': 'off',
+      'angular/no-service-method': 'off',
+    },
+  },
+
+  // --- (Option) GARDER templates.js mais autoriser require ---
+  // Dé-commente ce bloc si tu veux linter src/templates.js au lieu de l'ignorer.
+  // {
+  //   files: ['src/templates.js'],
+  //   languageOptions: {
+  //     ecmaVersion: 'latest',
+  //     sourceType: 'module',
+  //     globals: {
+  //       require: 'readonly' // pour require.context(...)
+  //     }
+  //   },
+  //   rules: {}
+  // }
+];
+
+
+
 
 
 
