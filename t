@@ -1,13 +1,44 @@
-minimize: true,
-    minimizer: [new TerserPlugin({
-      terserOptions: {
-        compress: { drop_console: true, drop_debugger: true },
-        mangle: true,
-        format: { comments: false }
-      },
-      extractComments: false
-    })]
+npm i -D eslint eslint-webpack-plugin eslint-plugin-angular
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:angular/johnpapa"
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "angular"
+  ],
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "off",
+    "angular/no-service-method": "off"
   }
+}
+
+const ESLintPlugin = require('eslint-webpack-plugin');
+
+module.exports = (env, argv) => {
+  const isProd = argv.mode === 'production';
+
+  return {
+    // ...
+    plugins: [
+      // autres plugins...
+      new ESLintPlugin({
+        extensions: ['js'],
+        emitWarning: !isProd,   // warnings seulement en dev
+        failOnError: isProd     // en prod => build échoue si erreurs
+      })
+    ]
+  };
+};
 
 
 // webpack.config.js
