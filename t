@@ -1,3 +1,15 @@
+minimize: true,
+    minimizer: [new TerserPlugin({
+      terserOptions: {
+        compress: { drop_console: true, drop_debugger: true },
+        mangle: true,
+        format: { comments: false }
+      },
+      extractComments: false
+    })]
+  }
+
+
 // webpack.config.js
 module.exports = {
   // ...
