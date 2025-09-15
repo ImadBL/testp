@@ -1,3 +1,21 @@
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'ng-annotate-loader',
+            options: {
+              add: true,
+              ngAnnotateOptions: { single_quotes: true }
+            }
+          }
+          // si tu as babel-loader, mets-le APRÈS ng-annotate-loader
+          // { loader: 'babel-loader', options: { /* ... */ } }
+        ]
+      },
+
+
+
 const isProd = process.env.NODE_ENV === 'production';
 
 module.exports = {
