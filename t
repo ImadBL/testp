@@ -1,10 +1,13 @@
-// Test DIAGNOSTIC (retire-le après)
-const tplCheck = require(
-  'ngtemplate-loader!' +
-  'html-loader?esModule=false!' +
-  './app/pages/workitem/workitem.html'
-);
-console.log('tpl length =', tplCheck && tplCheck.length);
+{
+  test: /bpmCustomerDocumentReindex\.html$/i,
+  type: 'javascript/auto',
+  enforce: 'pre',
+  use: [
+    { loader: 'ngtemplate-loader' },
+    { loader: 'html-loader', options: { minimize: true, sources: false, esModule: false } }
+  ]
+},
+
 
 
 
