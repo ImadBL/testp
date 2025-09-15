@@ -1,14 +1,11 @@
-// 🔎 Test inline (dans src/main.js) — à retirer après le diagnostic
-const path = require('path');
-
+// Test DIAGNOSTIC (retire-le après)
 const tplCheck = require(
-  'ngtemplate-loader?relativeTo=' +
-  encodeURIComponent(path.resolve(__dirname, 'src')) +
-  '!html-loader?minimize=true&sources=false&esModule=false!' +
+  'ngtemplate-loader!' +
+  'html-loader?esModule=false!' +
   './app/pages/workitem/workitem.html'
 );
-
 console.log('tpl length =', tplCheck && tplCheck.length);
+
 
 
 
