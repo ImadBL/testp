@@ -1,9 +1,15 @@
-import tplCheck from 'ngtemplate-loader?relativeTo=' +
-  encodeURIComponent(require('path').resolve(__dirname, 'src')) +
+// 🔎 Test inline (dans src/main.js) — à retirer après le diagnostic
+const path = require('path');
+
+const tplCheck = require(
+  'ngtemplate-loader?relativeTo=' +
+  encodeURIComponent(path.resolve(__dirname, 'src')) +
   '!html-loader?minimize=true&sources=false&esModule=false!' +
-  './app/pages/workitem/workitem.html';
+  './app/pages/workitem/workitem.html'
+);
 
 console.log('tpl length =', tplCheck && tplCheck.length);
+
 
 
 
