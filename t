@@ -1,3 +1,204 @@
+Réflexion durant 9s
+
+Super avancée 👏! Pour finir proprement (clean, index dev/prod, retests, livraison), voilà un plan simple + snippets prêts à coller.
+
+1) Clean automatique à chaque build
+
+Deux options (tu peux cumuler) :
+
+// webpack.config.js
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+
+module.exports = (env, argv) => {
+  const isProd = argv.mode === 'production';
+  return {
+    output: {
+      clean: true,            // ✅ supprime l’ancien dist
+      // ...filename, path…
+    },
+    plugins: [
+      new CleanWebpackPlugin() // ✅ ceinture + bretelles
+    ],
+  };
+};
+
+2) Un seul template HTML avec logique dev/prod (recommandé)
+
+Pas besoin d’avoir deux fichiers index.html. Utilise HtmlWebpackPlugin + un template EJS/Pug avec une condition. Exemple EJS :
+
+npm i -D html-webpack-plugin ejs
+
+
+webpack.config.js :
+
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = (env, argv) => {
+  const isProd = argv.mode === 'production';
+
+  return {
+    // …
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: 'src/index.ejs',  // 👈 un seul template
+        filename: 'index.html',
+        templateParameters: { isProd }, // dispo dans le template
+        inject: 'body', // injecte automatiquement JS/CSS de Webpack
+        minify: isProd && {
+          removeComments: true,
+          collapseWhitespace: true
+        }
+      })
+    ]
+  };
+};
+
+
+src/index.ejs (minimal) :
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>App</title>
+
+  <% if (!isProd) { %>
+    <!-- DEV: ressources directes (ex: une lib CSS locale si tu veux) -->
+    <!-- Tu peux aussi ajouter un <style> pour du CSS temporaire -->
+  <% } %>
+</head>
+<body>
+  <div id="app"></div>
+
+  <% if (isProd) { %>
+    <!-- PROD: rien de spécial à faire, HtmlWebpackPlugin injecte les tags
+         <link href="assets/css/vendor.x.min.css"> + <link href="assets/css/app.x.min.css"> -->
+  <% } %>
+</body>
+</html>
+
+
+En dev, si tu utilises style-loader (cf. §3), il n’y a pas de <link> : les styles sont injectés en <style> par JS → parfait pour le debug.
+En prod, MiniCssExtractPlugin génère les .min.css et HtmlWebpackPlugin ajoute les <link> tout seul.
+
+3) Dev = styles injectés ; Prod = CSS minifiés
+
+Switch automatique des loaders :
+
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+module.exports = (env, argv) => {
+  const isProd = argv.mode === 'production';
+
+  const styleLoader = isProd ? MiniCssExtractPlugin.loader : 'style-loader';
+
+  return {
+    // …
+    module: {
+      rules: [
+        // CSS
+        {
+          test: /\.css$/i,
+          use: [
+            styleLoader,                          // 👈 switch dev/prod
+            { loader: 'css-loader', options: { importLoaders: 1, sourceMap: !isProd } },
+            { loader: 'postcss-loader', options: { sourceMap: !isProd,
+              postcssOptions: { plugins: [require('autoprefixer')()] } } }
+          ]
+        },
+        // LESS
+        {
+          test: /\.less$/i,
+          use: [
+            styleLoader,                          // 👈 switch dev/prod
+            { loader: 'css-loader', options: { importLoaders: 2, sourceMap: !isProd } },
+            { loader: 'postcss-loader', options: { sourceMap: !isProd,
+              postcssOptions: { plugins: [require('autoprefixer')(), require('postcss-url')({ url: 'rebase' })] } } },
+            { loader: 'less-loader', options: { sourceMap: !isProd,
+              lessOptions: { plugins: [require('less-plugin-glob')] } } }
+          ]
+        },
+        // fonts/images … (inchangé)
+      ]
+    },
+    plugins: [
+      ...(isProd ? [ new MiniCssExtractPlugin({ filename: 'assets/css/[name].[contenthash:8].min.css' }) ] : []),
+    ],
+    devtool: isProd ? false : 'eval-cheap-module-source-map',
+  };
+};
+
+4) Scripts NPM & ouverture en dev
+{
+  "scripts": {
+    "start": "webpack serve --mode development --open",
+    "build": "webpack --mode production",
+    "clean": "rimraf dist"              // optionnel si tu veux forcer un clean manuel
+  }
+}
+
+
+Si tu utilises webpack-dev-server, ajoute :
+
+devServer: {
+  historyApiFallback: true,
+  client: { overlay: { warnings: false, errors: true } }
+}
+
+5) ESLint : silencieux en dev, bloquant en prod
+const ESLintPlugin = require('eslint-webpack-plugin');
+
+plugins: [
+  new ESLintPlugin({
+    context: path.resolve(__dirname, 'src'),
+    files: ['app/**/*.js'],
+    exclude: ['**/*.spec.js'],
+    emitWarning: false,     // pas de warning dans le navigateur en dev
+    emitError: true,
+    failOnError: isProd
+  }),
+  // …
+]
+
+6) Check-list de re-tests (recette)
+
+ Chargement dev : styles injectés (pas de <link>), HMR OK, source maps OK
+
+ Build prod : fichiers assets/css/vendor.*.min.css et assets/css/app.*.min.css générés
+
+ Images & fonts : chemins url(...) bien réécrits, assets présents sous assets/imgs et assets/fonts
+
+ HTML : un seul index.html final avec les bonnes balises injectées
+
+ ESLint : pas de blocage en dev, build prod fail si erreurs
+
+ Cache-busting : [contenthash] sur JS/CSS, pas d’anciens fichiers en dist (clean OK)
+
+7) Livraison recette (évo)
+
+npm run build
+
+Zipper le contenu de dist/ (pas le dossier parent)
+
+Fournir le changelog (remplacement Gulp → Webpack CSS/LESS/SVG + ESLint intégré)
+
+Plan de rollback (conserver tag précédent)
+
+Si tu préfères vraiment deux fichiers HTML séparés, c’est possible aussi :
+
+plugins: [
+  new HtmlWebpackPlugin({ template: 'src/index.dev.ejs',  filename: 'index.html',  // en dev
+    templateParameters: { isProd: false } }),
+  // et en prod : même plugin mais avec index.prod.ejs + isProd:true
+]
+
+
+…mais la solution un template avec isProd est plus simple et évite les divergences.
+
+Tu veux que je te génère un index.ejs un peu plus “réel” avec favicon, metas et une section <% if (!isProd) { %> … <% } %> prête à remplir ?
+
+
+
 npm i -D mini-css-extract-plugin css-loader postcss postcss-loader autoprefixer \
 less less-loader css-minimizer-webpack-plugin \
 svgspritemap-webpack-plugin
