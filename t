@@ -1,132 +1,163 @@
+<form name="userForm" novalidate ng-controller="NewUserCtrl as vm">
+
+  <!-- Username -->
+  <md-input-container>
+    <label>Username</label>
+    <input type="text"
+           ng-model="vm.newUser.username"
+           ng-change="vm.resetState()"
+           required />
+  </md-input-container>
+
+  <!-- Country -->
+  <md-input-container>
+    <label>Country</label>
+    <md-select ng-model="vm.newUser.countryCode"
+               ng-disabled="!vm.state.enableFields">
+      <md-option value=""></md-option>
+      <md-option value="FRA">FRA</md-option>
+      <md-option value="GBR">GBR</md-option>
+      <md-option value="ITA">ITA</md-option>
+      <md-option value="DEU">DEU</md-option>
+      <md-option value="ESP">ESP</md-option>
+      <md-option value="NLD">NLD</md-option>
+      <md-option value="BEL">BEL</md-option>
+    </md-select>
+  </md-input-container>
+
+  <!-- Fullname -->
+  <md-input-container>
+    <label>Full Name</label>
+    <input type="text"
+           ng-model="vm.newUser.fullname"
+           ng-disabled="!vm.state.enableFields" />
+  </md-input-container>
+
+  <!-- Organismes -->
+  <md-input-container>
+    <label>Organismes ( , )</label>
+    <input type="text"
+           ng-model="vm.newUser.organismes"
+           ng-disabled="!vm.state.enableFields" />
+  </md-input-container>
+
+  <!-- Roles -->
+  <md-input-container>
+    <label>Roles ( , )</label>
+    <input type="text"
+           ng-model="vm.newUser.roles"
+           ng-disabled="!vm.state.enableFields" />
+  </md-input-container>
+
+  <!-- Buttons -->
+  <div layout="row" layout-align="start center" layout-gap="8">
+    <!-- Check -->
+    <md-button class="md-primary md-raised"
+               ng-click="vm.check()"
+               ng-disabled="!vm.newUser.username || vm.state.loading">
+      Check
+    </md-button>
+
+    <!-- Add -->
+    <md-button class="md-primary md-raised"
+               ng-click="vm.add()"
+               ng-if="vm.state.checked && vm.state.exists === false"
+               ng-disabled="vm.state.loading || !vm.state.enableFields">
+      Add
+    </md-button>
+
+    <!-- Update -->
+    <md-button class="md-warn md-raised"
+               ng-click="vm.update()"
+               ng-if="vm.state.checked && vm.state.exists === true"
+               ng-disabled="vm.state.loading || !vm.state.enableFields">
+      Update
+    </md-button>
+
+    <span ng-if="vm.state.checked && vm.state.exists === true"
+          class="md-caption" style="margin-left:8px;color:#388e3c">
+      déjà présent dans LDAP
+    </span>
+    <span ng-if="vm.state.checked && vm.state.exists === false"
+          class="md-caption" style="margin-left:8px;color:#1976d2">
+      non trouvé (vous pouvez l'ajouter)
+    </span>
+  </div>
+</form>
+
 angular.module('app', [])
-.factory('UserApi', function($http) {
-  const base = '/api/ldap/users';
-  return {
-    exists:  uid   => $http.get(`${base}/${encodeURIComponent(uid)}/exists`), // -> {exists:true|false}
-    create:  body  => $http.post(base, body),                                  // {uid, firstName, lastName, email, ...}
-    update:  (uid, body) => $http.put(`${base}/${encodeURIComponent(uid)}`, body)
-  };
-})
-.controller('UsersCtrl', function($timeout, UserApi) {
-  const vm = this;
-  vm.rows = [{ country:'', username:'', organismes:'', roles:'', exists:null, loading:false }];
-
-  vm.addEmptyRow = () => vm.rows.push({ country:'', username:'', organismes:'', roles:'', exists:null });
-
-  // Anti-bounce: on attend 400ms après la saisie pour éviter trop d’appels
-  let debounce;
-  vm.onUsernameChange = (row) => {
-    row.exists = null;
-    if (debounce) $timeout.cancel(debounce);
-    if (!row.username || !row.username.trim()) return;
-
-    debounce = $timeout(() => {
-      row.loading = true;
-      UserApi.exists(row.username.trim())
-        .then(res => row.exists = !!(res.data && res.data.exists))
-        .catch(() => row.exists = null)   // en cas d’erreur, on ne bloque pas l’UI
-        .finally(() => row.loading = false);
-    }, 400);
-  };
-
-  vm.add = (row) => {
-    if (!row.username) return;
-    row.loading = true;
-
-    const payload = mapToBackend(row);
-    UserApi.create(payload)
-      .then(() => {
-        row.exists = true;               // créé → il “existe” désormais
-        toast('User créé dans LDAP');
-      })
-      .catch(err => toast('Erreur création: ' + (err.data && err.data.message || 'inconnue'), true))
-      .finally(() => row.loading = false);
-  };
-
-  vm.update = (row) => {
-    row.loading = true;
-    const payload = mapToBackend(row);
-    UserApi.update(row.username, payload)
-      .then(() => toast('User mis à jour'))
-      .catch(err => toast('Erreur update: ' + (err.data && err.data.message || 'inconnue'), true))
-      .finally(() => row.loading = false);
-  };
-
-  function mapToBackend(row) {
-    // adapte ce mapping à ton backend: il lui faut au minimum uid, sn, cn/mail
-    const [firstName='', lastName=''] = guessNames(row.username);
+  .factory('UserApi', function($http) {
+    const base = '/api';
     return {
-      uid: row.username,
-      firstName,
-      lastName,
-      email: `${row.username}@example.com`,
-      country: row.country,
-      organismes: row.organismes,
-      roles: row.roles
+      exists: uid => $http.get(`${base}/ldap/users/${encodeURIComponent(uid)}/exists`),
+      create: body => $http.post(`${base}/users`, body),
+      update: (uid, body) => $http.put(`${base}/users/${encodeURIComponent(uid)}`, body)
     };
-  }
+  })
+  .controller('NewUserCtrl', function(UserApi) {
+    const vm = this;
 
-  function guessNames(uid) {
-    // helper basique: remplace par ta vraie saisie si tu as des champs prénom/nom
-    // ex: 'jdoe' -> ['John','Doe'] (mock)
-    return [uid, 'User'];
-  }
+    vm.newUser = { username: '', countryCode: '', fullname: '', organismes: '', roles: '' };
+    vm.state = {
+      loading: false,
+      checked: false,
+      exists: null,
+      enableFields: false
+    };
 
-  function toast(msg, isError) {
-    if (isError) console.error(msg);
-    else console.log(msg);
-    // branche ici ton toaster préféré (angular-toastr, etc.)
-  }
-});
+    vm.resetState = function() {
+      vm.state.checked = false;
+      vm.state.exists = null;
+      vm.state.enableFields = false;
+    };
 
-<div ng-app="app" ng-controller="UsersCtrl as vm" class="p-4">
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Country</th>
-        <th>Username</th>
-        <th>Organismes</th>
-        <th>Roles</th>
-        <th style="width:180px;">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr ng-repeat="row in vm.rows">
-        <td>
-          <input class="form-control" ng-model="row.country">
-        </td>
-        <td>
-          <input class="form-control"
-                 ng-model="row.username"
-                 ng-change="vm.onUsernameChange(row)"
-                 placeholder="uid LDAP">
-          <small ng-if="row.exists" class="text-success">existe dans LDAP</small>
-          <small ng-if="row.exists === false" class="text-muted">non trouvé</small>
-        </td>
-        <td>
-          <input class="form-control" ng-model="row.organismes">
-        </td>
-        <td>
-          <input class="form-control" ng-model="row.roles">
-        </td>
-        <td>
-          <button class="btn btn-primary"
-                  ng-click="vm.add(row)"
-                  ng-disabled="row.loading || row.exists">
-            Add
-          </button>
-          <button class="btn btn-warning"
-                  ng-if="row.exists"
-                  ng-click="vm.update(row)"
-                  ng-disabled="row.loading">
-            Update
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+    vm.check = function() {
+      if (!vm.newUser.username) return;
+      vm.state.loading = true;
+      UserApi.exists(vm.newUser.username.trim())
+        .then(res => {
+          vm.state.exists = !!(res.data && res.data.exists);
+          vm.state.checked = true;
+          vm.state.enableFields = true; // active les champs après vérification
+        })
+        .catch(() => {
+          vm.state.exists = null;
+          vm.state.checked = true;
+        })
+        .finally(() => vm.state.loading = false);
+    };
 
-  <button class="btn btn-outline-secondary" ng-click="vm.addEmptyRow()">+ Row</button>
-</div>
+    vm.add = function() {
+      const body = mapToBackend(vm.newUser);
+      vm.state.loading = true;
+      UserApi.create(body)
+        .then(() => {
+          vm.state.exists = true;
+        })
+        .finally(() => vm.state.loading = false);
+    };
+
+    vm.update = function() {
+      const body = mapToBackend(vm.newUser);
+      vm.state.loading = true;
+      UserApi.update(vm.newUser.username.trim(), body)
+        .finally(() => vm.state.loading = false);
+    };
+
+    function mapToBackend(row) {
+      const uid = row.username.trim();
+      const [firstName, ...last] = (row.fullname || uid).split(' ');
+      const lastName = last.join(' ') || 'User';
+      return {
+        uid,
+        firstName,
+        lastName,
+        email: `${uid}@example.com`,
+        country: row.countryCode,
+        organismes: row.organismes,
+        roles: row.roles
+      };
+    }
+  });
 
 
