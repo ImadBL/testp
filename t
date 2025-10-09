@@ -1,163 +1,162 @@
-<form name="userForm" novalidate ng-controller="NewUserCtrl as vm">
+<dependency>
+  <groupId>org.springframework.ldap</groupId>
+  <artifactId>spring-ldap-core</artifactId>
+  <version>3.2.7</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.mockito</groupId>
+  <artifactId>mockito-junit-jupiter</artifactId>
+  <version>5.12.0</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.junit.jupiter</groupId>
+  <artifactId>junit-jupiter</artifactId>
+  <version>5.10.2</version>
+  <scope>test</scope>
+</dependency>
 
-  <!-- Username -->
-  <md-input-container>
-    <label>Username</label>
-    <input type="text"
-           ng-model="vm.newUser.username"
-           ng-change="vm.resetState()"
-           required />
-  </md-input-container>
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AmxLdapServiceImpl implements AmxLdapService {
 
-  <!-- Country -->
-  <md-input-container>
-    <label>Country</label>
-    <md-select ng-model="vm.newUser.countryCode"
-               ng-disabled="!vm.state.enableFields">
-      <md-option value=""></md-option>
-      <md-option value="FRA">FRA</md-option>
-      <md-option value="GBR">GBR</md-option>
-      <md-option value="ITA">ITA</md-option>
-      <md-option value="DEU">DEU</md-option>
-      <md-option value="ESP">ESP</md-option>
-      <md-option value="NLD">NLD</md-option>
-      <md-option value="BEL">BEL</md-option>
-    </md-select>
-  </md-input-container>
+  private final LdapContextSource contextSource;
+  private final LdapTemplate ldapTemplate;
 
-  <!-- Fullname -->
-  <md-input-container>
-    <label>Full Name</label>
-    <input type="text"
-           ng-model="vm.newUser.fullname"
-           ng-disabled="!vm.state.enableFields" />
-  </md-input-container>
-
-  <!-- Organismes -->
-  <md-input-container>
-    <label>Organismes ( , )</label>
-    <input type="text"
-           ng-model="vm.newUser.organismes"
-           ng-disabled="!vm.state.enableFields" />
-  </md-input-container>
-
-  <!-- Roles -->
-  <md-input-container>
-    <label>Roles ( , )</label>
-    <input type="text"
-           ng-model="vm.newUser.roles"
-           ng-disabled="!vm.state.enableFields" />
-  </md-input-container>
-
-  <!-- Buttons -->
-  <div layout="row" layout-align="start center" layout-gap="8">
-    <!-- Check -->
-    <md-button class="md-primary md-raised"
-               ng-click="vm.check()"
-               ng-disabled="!vm.newUser.username || vm.state.loading">
-      Check
-    </md-button>
-
-    <!-- Add -->
-    <md-button class="md-primary md-raised"
-               ng-click="vm.add()"
-               ng-if="vm.state.checked && vm.state.exists === false"
-               ng-disabled="vm.state.loading || !vm.state.enableFields">
-      Add
-    </md-button>
-
-    <!-- Update -->
-    <md-button class="md-warn md-raised"
-               ng-click="vm.update()"
-               ng-if="vm.state.checked && vm.state.exists === true"
-               ng-disabled="vm.state.loading || !vm.state.enableFields">
-      Update
-    </md-button>
-
-    <span ng-if="vm.state.checked && vm.state.exists === true"
-          class="md-caption" style="margin-left:8px;color:#388e3c">
-      déjà présent dans LDAP
-    </span>
-    <span ng-if="vm.state.checked && vm.state.exists === false"
-          class="md-caption" style="margin-left:8px;color:#1976d2">
-      non trouvé (vous pouvez l'ajouter)
-    </span>
-  </div>
-</form>
-
-angular.module('app', [])
-  .factory('UserApi', function($http) {
-    const base = '/api';
-    return {
-      exists: uid => $http.get(`${base}/ldap/users/${encodeURIComponent(uid)}/exists`),
-      create: body => $http.post(`${base}/users`, body),
-      update: (uid, body) => $http.put(`${base}/users/${encodeURIComponent(uid)}`, body)
-    };
-  })
-  .controller('NewUserCtrl', function(UserApi) {
-    const vm = this;
-
-    vm.newUser = { username: '', countryCode: '', fullname: '', organismes: '', roles: '' };
-    vm.state = {
-      loading: false,
-      checked: false,
-      exists: null,
-      enableFields: false
-    };
-
-    vm.resetState = function() {
-      vm.state.checked = false;
-      vm.state.exists = null;
-      vm.state.enableFields = false;
-    };
-
-    vm.check = function() {
-      if (!vm.newUser.username) return;
-      vm.state.loading = true;
-      UserApi.exists(vm.newUser.username.trim())
-        .then(res => {
-          vm.state.exists = !!(res.data && res.data.exists);
-          vm.state.checked = true;
-          vm.state.enableFields = true; // active les champs après vérification
-        })
-        .catch(() => {
-          vm.state.exists = null;
-          vm.state.checked = true;
-        })
-        .finally(() => vm.state.loading = false);
-    };
-
-    vm.add = function() {
-      const body = mapToBackend(vm.newUser);
-      vm.state.loading = true;
-      UserApi.create(body)
-        .then(() => {
-          vm.state.exists = true;
-        })
-        .finally(() => vm.state.loading = false);
-    };
-
-    vm.update = function() {
-      const body = mapToBackend(vm.newUser);
-      vm.state.loading = true;
-      UserApi.update(vm.newUser.username.trim(), body)
-        .finally(() => vm.state.loading = false);
-    };
-
-    function mapToBackend(row) {
-      const uid = row.username.trim();
-      const [firstName, ...last] = (row.fullname || uid).split(' ');
-      const lastName = last.join(' ') || 'User';
-      return {
-        uid,
-        firstName,
-        lastName,
-        email: `${uid}@example.com`,
-        country: row.countryCode,
-        organismes: row.organismes,
-        roles: row.roles
-      };
+  @Override
+  public boolean userExists(String uid) {
+    try {
+      var res = ldapTemplate.search(
+          query().where("uid").is(uid),
+          (AttributesMapper<String>) attrs -> (String) attrs.get("uid").get()
+      );
+      return !res.isEmpty();
+    } catch (Exception e) {
+      log.warn("Error on verification LDAP for {}: {}", uid, e.getMessage());
+      return false;
     }
-  });
+  }
 
+  @Override
+  public void addUser(String uid) throws ServiceException {
+    if (userExists(uid)) {
+      throw new ServiceException("User already exists: " + uid);
+    }
+    Name dn = LdapNameBuilder.newInstance().add("uid", uid).build();
+    var ctx = new DirContextAdapter(dn);
+    ctx.setAttributeValues("objectClass",
+        new String[]{"top", "person", "organizationalPerson", "inetOrgPerson"});
+    ctx.setAttributeValue("uid", uid);
+    ctx.setAttributeValue("sn", "DOE");
+    ctx.setAttributeValue("cn", "John Doe");
+    ctx.setAttributeValue("mail", "john.doe@example.com");
+    ctx.setAttributeValue("userPassword", uid);
 
+    try {
+      ldapTemplate.bind(ctx);
+    } catch (Exception e) {
+      throw new ServiceException("Error of creation on LDAP for " + uid + ": " + e.getMessage(), e);
+    }
+  }
+}
+Tests unitaires
+java
+Copier le code
+@ExtendWith(MockitoExtension.class)
+class AmxLdapServiceImplTest {
+
+  @Mock LdapContextSource contextSource; // pas utilisé directement mais présent au ctor
+  @Mock LdapTemplate ldapTemplate;
+
+  AmxLdapServiceImpl service;
+
+  @BeforeEach
+  void setUp() {
+    service = new AmxLdapServiceImpl(contextSource, ldapTemplate);
+  }
+
+  // ---------- userExists ----------
+
+  @Test
+  void userExists_returnsTrue_whenSearchReturnsResult() {
+    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
+        .thenReturn(List.of("titi"));
+
+    boolean exists = service.userExists("titi");
+
+    assertTrue(exists);
+    verify(ldapTemplate).search(any(), any(AttributesMapper.class));
+  }
+
+  @Test
+  void userExists_returnsFalse_whenSearchReturnsEmpty() {
+    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
+        .thenReturn(Collections.emptyList());
+
+    boolean exists = service.userExists("toto");
+
+    assertFalse(exists);
+  }
+
+  @Test
+  void userExists_returnsFalse_whenLdapThrows() {
+    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
+        .thenThrow(new RuntimeException("boom"));
+
+    boolean exists = service.userExists("err");
+
+    assertFalse(exists);
+  }
+
+  // ---------- addUser ----------
+
+  @Test
+  void addUser_bindsEntry_whenUserAbsent() throws Exception {
+    // userExists -> false
+    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
+        .thenReturn(Collections.emptyList());
+
+    // capture du DirContext envoyé à bind
+    ArgumentCaptor<DirContextAdapter> captor = ArgumentCaptor.forClass(DirContextAdapter.class);
+
+    service.addUser("titi");
+
+    verify(ldapTemplate).bind(captor.capture());
+    DirContextAdapter sent = captor.getValue();
+
+    // DN attendu (base gérée par contextSource -> ici DN relatif)
+    assertEquals("uid=titi", sent.getDn().toString().toLowerCase());
+    assertEquals("titi", sent.getStringAttribute("uid"));
+    assertEquals("DOE", sent.getStringAttribute("sn"));
+    assertEquals("John Doe", sent.getStringAttribute("cn"));
+    assertEquals("john.doe@example.com", sent.getStringAttribute("mail"));
+  }
+
+  @Test
+  void addUser_throws_whenUserAlreadyExists() {
+    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
+        .thenReturn(List.of("titi")); // exists = true
+
+    ServiceException ex = assertThrows(ServiceException.class,
+        () -> service.addUser("titi"));
+
+    assertTrue(ex.getMessage().contains("already exists"));
+    verify(ldapTemplate, never()).bind(any()); // pas de bind
+  }
+
+  @Test
+  void addUser_wrapsException_whenBindFails() {
+    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
+        .thenReturn(Collections.emptyList()); // exists=false
+
+    doThrow(new RuntimeException("bind failed")).when(ldapTemplate).bind(any());
+
+    ServiceException ex = assertThrows(ServiceException.class,
+        () -> service.addUser("titi"));
+
+    assertTrue(ex.getMessage().contains("Error of creation"));
+    verify(ldapTemplate).bind(any());
+  }
+}
