@@ -1,162 +1,82 @@
-<dependency>
-  <groupId>org.springframework.ldap</groupId>
-  <artifactId>spring-ldap-core</artifactId>
-  <version>3.2.7</version>
-  <scope>test</scope>
-</dependency>
-<dependency>
-  <groupId>org.mockito</groupId>
-  <artifactId>mockito-junit-jupiter</artifactId>
-  <version>5.12.0</version>
-  <scope>test</scope>
-</dependency>
-<dependency>
-  <groupId>org.junit.jupiter</groupId>
-  <artifactId>junit-jupiter</artifactId>
-  <version>5.10.2</version>
-  <scope>test</scope>
-</dependency>
+/* global require */
+const fs = require('fs');
+const path = require('path');
+const xlsx = require('xlsx');
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class AmxLdapServiceImpl implements AmxLdapService {
+const jsonFiles = [
+  { lang: 'fr', path: path.join(__dirname, 'locale-fr.json') },
+  { lang: 'en', path: path.join(__dirname, 'locale-en.json') },
+  { lang: 'it', path: path.join(__dirname, 'locale-it.json') },
+  { lang: 'de', path: path.join(__dirname, 'locale-de.json') }
+];
 
-  private final LdapContextSource contextSource;
-  private final LdapTemplate ldapTemplate;
+const excelFilePath = path.join(__dirname, 'data-from-json.xlsx');
 
-  @Override
-  public boolean userExists(String uid) {
-    try {
-      var res = ldapTemplate.search(
-          query().where("uid").is(uid),
-          (AttributesMapper<String>) attrs -> (String) attrs.get("uid").get()
-      );
-      return !res.isEmpty();
-    } catch (Exception e) {
-      log.warn("Error on verification LDAP for {}: {}", uid, e.getMessage());
-      return false;
+/**
+ * Aplatit un objet JSON en clés pointées.
+ * Exemple : { a: { b: { c: "val" } } } => { "a.b.c": "val" }
+ */
+function flattenJson(obj, prefix = '') {
+  let result = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const newKey = prefix ? `${prefix}.${key}` : key;
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        Object.assign(result, flattenJson(obj[key], newKey));
+      } else {
+        result[newKey] = obj[key];
+      }
     }
   }
-
-  @Override
-  public void addUser(String uid) throws ServiceException {
-    if (userExists(uid)) {
-      throw new ServiceException("User already exists: " + uid);
-    }
-    Name dn = LdapNameBuilder.newInstance().add("uid", uid).build();
-    var ctx = new DirContextAdapter(dn);
-    ctx.setAttributeValues("objectClass",
-        new String[]{"top", "person", "organizationalPerson", "inetOrgPerson"});
-    ctx.setAttributeValue("uid", uid);
-    ctx.setAttributeValue("sn", "DOE");
-    ctx.setAttributeValue("cn", "John Doe");
-    ctx.setAttributeValue("mail", "john.doe@example.com");
-    ctx.setAttributeValue("userPassword", uid);
-
-    try {
-      ldapTemplate.bind(ctx);
-    } catch (Exception e) {
-      throw new ServiceException("Error of creation on LDAP for " + uid + ": " + e.getMessage(), e);
-    }
-  }
+  return result;
 }
-Tests unitaires
-java
-Copier le code
-@ExtendWith(MockitoExtension.class)
-class AmxLdapServiceImplTest {
 
-  @Mock LdapContextSource contextSource; // pas utilisé directement mais présent au ctor
-  @Mock LdapTemplate ldapTemplate;
+/**
+ * Lecture et conversion de tous les JSON
+ */
+function readAllJson() {
+  const allLangData = {};
 
-  AmxLdapServiceImpl service;
+  jsonFiles.forEach(({ lang, path: filePath }) => {
+    const content = fs.readFileSync(filePath, 'utf-8').replace(/^\uFEFF/, '');
+    const jsonData = JSON.parse(content);
+    allLangData[lang] = flattenJson(jsonData);
+  });
 
-  @BeforeEach
-  void setUp() {
-    service = new AmxLdapServiceImpl(contextSource, ldapTemplate);
+  // Fusion de toutes les clés
+  const allKeys = new Set();
+  for (const lang in allLangData) {
+    Object.keys(allLangData[lang]).forEach(k => allKeys.add(k));
   }
 
-  // ---------- userExists ----------
+  // Construction du tableau pour Excel
+  const rows = [];
+  allKeys.forEach(key => {
+    const row = { key };
+    jsonFiles.forEach(({ lang }) => {
+      row[lang] = allLangData[lang][key] || '';
+    });
+    rows.push(row);
+  });
 
-  @Test
-  void userExists_returnsTrue_whenSearchReturnsResult() {
-    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
-        .thenReturn(List.of("titi"));
+  return rows;
+}
 
-    boolean exists = service.userExists("titi");
+/**
+ * Écriture du tableau dans un fichier Excel
+ */
+function writeExcel(data) {
+  const worksheet = xlsx.utils.json_to_sheet(data);
+  const workbook = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(workbook, worksheet, 'Traductions');
+  xlsx.writeFile(workbook, excelFilePath);
+  console.log(`✅ Fichier Excel généré: ${excelFilePath}`);
+}
 
-    assertTrue(exists);
-    verify(ldapTemplate).search(any(), any(AttributesMapper.class));
-  }
-
-  @Test
-  void userExists_returnsFalse_whenSearchReturnsEmpty() {
-    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
-        .thenReturn(Collections.emptyList());
-
-    boolean exists = service.userExists("toto");
-
-    assertFalse(exists);
-  }
-
-  @Test
-  void userExists_returnsFalse_whenLdapThrows() {
-    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
-        .thenThrow(new RuntimeException("boom"));
-
-    boolean exists = service.userExists("err");
-
-    assertFalse(exists);
-  }
-
-  // ---------- addUser ----------
-
-  @Test
-  void addUser_bindsEntry_whenUserAbsent() throws Exception {
-    // userExists -> false
-    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
-        .thenReturn(Collections.emptyList());
-
-    // capture du DirContext envoyé à bind
-    ArgumentCaptor<DirContextAdapter> captor = ArgumentCaptor.forClass(DirContextAdapter.class);
-
-    service.addUser("titi");
-
-    verify(ldapTemplate).bind(captor.capture());
-    DirContextAdapter sent = captor.getValue();
-
-    // DN attendu (base gérée par contextSource -> ici DN relatif)
-    assertEquals("uid=titi", sent.getDn().toString().toLowerCase());
-    assertEquals("titi", sent.getStringAttribute("uid"));
-    assertEquals("DOE", sent.getStringAttribute("sn"));
-    assertEquals("John Doe", sent.getStringAttribute("cn"));
-    assertEquals("john.doe@example.com", sent.getStringAttribute("mail"));
-  }
-
-  @Test
-  void addUser_throws_whenUserAlreadyExists() {
-    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
-        .thenReturn(List.of("titi")); // exists = true
-
-    ServiceException ex = assertThrows(ServiceException.class,
-        () -> service.addUser("titi"));
-
-    assertTrue(ex.getMessage().contains("already exists"));
-    verify(ldapTemplate, never()).bind(any()); // pas de bind
-  }
-
-  @Test
-  void addUser_wrapsException_whenBindFails() {
-    when(ldapTemplate.search(any(), any(AttributesMapper.class)))
-        .thenReturn(Collections.emptyList()); // exists=false
-
-    doThrow(new RuntimeException("bind failed")).when(ldapTemplate).bind(any());
-
-    ServiceException ex = assertThrows(ServiceException.class,
-        () -> service.addUser("titi"));
-
-    assertTrue(ex.getMessage().contains("Error of creation"));
-    verify(ldapTemplate).bind(any());
-  }
+// Exécution
+try {
+  const data = readAllJson();
+  writeExcel(data);
+} catch (err) {
+  console.error('Erreur:', err);
 }
