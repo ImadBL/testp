@@ -1,43 +1,131 @@
-function addComment() {
-    logger.loading(true);
+function uploadSync(forms, docUpload, $filter, contractId, messageAttachment = false) {
+    var defer = $q.defer();
+    var i = 0;
+    var successfulDocs = [];
 
-    var chain = Promise.resolve();
+    while (i < forms.length) {
+        var ff = forms[i++];
+        try {
+            var XHR = new XMLHttpRequest();
+            XHR.open('POST', 'api/ged/documents/prepar/multi-upload', false);
+            XHR.send(ff);
 
-    // Étape 1 : editMsgVisibility (si attach)
-    if (vm.nbDocsAttached > 0) {
-        chain = chain
-            .then(() => {
-                angular.forEach(vm.fileAttached, doc => doc.metadata.customerVisibilityFlag = true);
-                return documentCaseService.editMsgVisibility(vm.caseId, vm.caseType, vm.fileAttached);
-            })
-            .then(() => auditService.log('Visibility edited'));
+            if (XHR.status === 200) {
+                var rr = angular.fromJson(XHR.response);
+                if (rr.id) {
+                    var ext = rr.name.split('.').pop().toUpperCase();
+                    var doc = {
+                        docId: rr.id,
+                        docGroup: ff.get('group'),
+                        docType: ff.get('docType'),
+                        docSubType: ff.get('subType'),
+                        contractId: contractId,
+                        filename: rr.name,
+                        extension: ext,
+                        countryCode: rr.countryCode,
+                        messageAttachment: messageAttachment
+                    };
+                    docUpload.push(doc);
+                    successfulDocs.push(doc.docId);
+                }
+                if (i === forms.length) {
+                    defer.resolve(docUpload);
+                }
+            } else if (XHR.status === 500) {
+                var errorResponse = angular.fromJson(XHR.response);
+                logger.error('Error during upload: ' + errorResponse.externalName);
+                cleanupSuccessfulDocs(successfulDocs);
+                defer.reject('Upload failed: ' + errorResponse.externalName);
+                break;
+            }
+        } catch (error) {
+            $log.error('Unexpected error during upload', error);
+            cleanupSuccessfulDocs(successfulDocs);
+            defer.reject('Unexpected error during upload');
+            break;
+        }
     }
 
-    // Étape 2 : upload + attachDoc + addDocs (si upload)
-    if (vm.nbDocsUploaded > 0) {
-        chain = chain
-            .then(() => {
-                var formData = documentCaseService.setDocumentForms(vm.formData, vm.businessObject);
-                return gdsService.uploadAsync(formData, vm.docs, $filter, vm.businessObject.id, true);
-            })
-            .then(() => documentCaseService.attachDocument(vm.caseId, vm.caseType, vm.docs))
-            .then(response => documentCaseService.addDocs(vm.caseType, vm.caseId, response.data))
-            .then(() => auditService.log('Documents uploaded and attached'));
+    function cleanupSuccessfulDocs(docIds) {
+        if (docIds.length > 0) {
+            $http.post('api/ged/documents/updateStatus', {
+                docIds: docIds,
+                status: 'DELETED'
+            }).then(() => {
+                logger.info('Marked successful docs as DELETED');
+            }).catch(err => {
+                logger.error('Failed to update status for docs', err);
+            });
+        }
     }
 
-    // Étape finale : un seul commentaire
-    chain
-        .then(() => CommentShareService.addComments(vm.message, vm.nbDocs, true, vm.caseType, vm.portal, vm.user, vm.caseId, vm.comments, vm.add, vm.comments2))
-        .then(() => {
-            vm.add = false;
-            angular.element('.loading').hide();
-            logger.success($translate.instant('toast.sendMsgSuccess'));
-        })
-        .catch(error => {
-            console.error('Erreur :', error);
-            logger.error($translate.instant('toast.sendMsgError'));
-        })
-        .finally(() => {
-            logger.loading(false);
-        });
+    return defer.promise;
+}
+
+
+
+
+
+function uploadSync(forms, docUpload, $filter, contractId, messageAttachment = false) {
+    var defer = $q.defer();
+    var i = 0;
+    var successfulDocs = [];
+
+    while (i < forms.length) {
+        var ff = forms[i++];
+        try {
+            var XHR = new XMLHttpRequest();
+            XHR.open('POST', 'api/ged/documents/prepar/multi-upload', false);
+            XHR.send(ff);
+
+            if (XHR.status === 200) {
+                var rr = angular.fromJson(XHR.response);
+                if (rr.id) {
+                    var ext = rr.name.split('.').pop().toUpperCase();
+                    var doc = {
+                        docId: rr.id,
+                        docGroup: ff.get('group'),
+                        docType: ff.get('docType'),
+                        docSubType: ff.get('subType'),
+                        contractId: contractId,
+                        filename: rr.name,
+                        extension: ext,
+                        countryCode: rr.countryCode,
+                        messageAttachment: messageAttachment
+                    };
+                    docUpload.push(doc);
+                    successfulDocs.push(doc.docId);
+                }
+                if (i === forms.length) {
+                    defer.resolve(docUpload);
+                }
+            } else if (XHR.status === 500) {
+                var errorResponse = angular.fromJson(XHR.response);
+                logger.error('Error during upload: ' + errorResponse.externalName);
+                cleanupSuccessfulDocs(successfulDocs);
+                defer.reject('Upload failed: ' + errorResponse.externalName);
+                break;
+            }
+        } catch (error) {
+            $log.error('Unexpected error during upload', error);
+            cleanupSuccessfulDocs(successfulDocs);
+            defer.reject('Unexpected error during upload');
+            break;
+        }
+    }
+
+    function cleanupSuccessfulDocs(docIds) {
+        if (docIds.length > 0) {
+            $http.post('api/ged/documents/updateStatus', {
+                docIds: docIds,
+                status: 'DELETED'
+            }).then(() => {
+                logger.info('Marked successful docs as DELETED');
+            }).catch(err => {
+                logger.error('Failed to update status for docs', err);
+            });
+        }
+    }
+
+    return defer.promise;
 }
