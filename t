@@ -1,63 +1,57 @@
-function uploadSync(forms, docUpload, $filter, contractId, messageAttachment = false) {
-    var defer = $q.defer();
-    var i = 0;
-    var successfulDocs = [];
+function uploadDocumentController($scope, $mdDialog, $filter, gedService, documentCaseService, DocManagerSettingsService, DocumentsHashService) {
+    var vm = this;
+    vm.display = display;
 
-    while (i < forms.length) {
-        var ff = forms[i++];
-        try {
-            var XHR = new XMLHttpRequest();
-            XHR.open('POST', 'api/ged/documents/prepar/multi-upload', false);
-            XHR.send(ff);
+    function display(ev) {
+        $mdDialog.show({
+            controller: addDocumentDialogController,
+            controllerAs: 'vm',
+            templateUrl: 'app/directives/bpmDocuments/bpmUploadDocument/bpmUploadDocumentDialog.html',
+            targetEvent: ev
+        }).then(function(formData) {
+            $scope.$emit('startLoading'); // Start spinner
 
-            if (XHR.status === 200) {
-                var rr = angular.fromJson(XHR.response);
-                if (rr.id) {
-                    var ext = rr.name.split('.').pop().toUpperCase();
-                    var doc = {
-                        docId: rr.id,
-                        docGroup: ff.get('group'),
-                        docType: ff.get('docType'),
-                        docSubType: ff.get('subType'),
-                        contractId: contractId,
-                        filename: rr.name,
-                        extension: ext,
-                        countryCode: rr.countryCode,
-                        messageAttachment: messageAttachment
-                    };
-                    docUpload.push(doc);
-                    successfulDocs.push(doc.docId);
+            vm.businessObject = {
+                id: vm.businessObjectId,
+                type: vm.businessObjectType,
+                countryCode: vm.country
+            };
+
+            var forms = documentCaseService.setDocumentForms(formData, vm.businessObject);
+            var allowedFormats = ['PDF', 'DOCX', 'XLSX'];
+            var maxSize = 7 * 1024 * 1024; // 7MB
+
+            // Validate before upload
+            for (let f of forms) {
+                let file = f.get('file');
+                if (file.size > maxSize) {
+                    $scope.$emit('stopLoading');
+                    alert('File too large: ' + file.name);
+                    return;
                 }
-                if (i === forms.length) {
-                    defer.resolve(docUpload);
+                let ext = file.name.split('.').pop().toUpperCase();
+                if (!allowedFormats.includes(ext)) {
+                    $scope.$emit('stopLoading');
+                    alert('Invalid file format: ' + file.name);
+                    return;
                 }
-            } else if (XHR.status === 500) {
-                var errorResponse = angular.fromJson(XHR.response);
-                logger.error('Error during upload: ' + errorResponse.externalName);
-                cleanupSuccessfulDocs(successfulDocs);
-                defer.reject('Upload failed: ' + errorResponse.externalName);
-                break;
             }
-        } catch (error) {
-            $log.error('Unexpected error during upload', error);
-            cleanupSuccessfulDocs(successfulDocs);
-            defer.reject('Unexpected error during upload');
-            break;
-        }
-    }
 
-    function cleanupSuccessfulDocs(docIds) {
-        if (docIds.length > 0) {
-            $http.post('api/ged/documents/updateStatus', {
-                docIds: docIds,
-                status: 'DELETED'
-            }).then(() => {
-                logger.info('Marked successful docs as DELETED');
-            }).catch(err => {
-                logger.error('Failed to update status for docs', err);
-            });
-        }
+            // Upload documents
+            gedService.uploadSync(forms, vm.docs, $filter, vm.businessObject.id, false)
+                .then(function(docUploaded) {
+                    documentCaseService.attachDocument(vm.caseId, vm.caseType, vm.docs, false)
+                        .then(function(response) {
+                            vm.displayedCount += docUploaded.length;
+                            DocumentsHashService.addDocs(vm.caseType, vm.caseId, docUploaded);
+                        });
+                })
+                .catch(function(error) {
+                    alert('Upload failed: ' + error);
+                })
+                .finally(function() {
+                    $scope.$emit('stopLoading'); // Stop spinner
+                });
+        });
     }
-
-    return defer.promise;
 }
