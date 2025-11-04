@@ -1,2 +1,1 @@
-Pour info, j’ai livré le ticket 25 en INT EVO et SOC. Dites-moi si je peux le passer directement en Done, étant donné qu’il est techniquement impossible de le tester de votre côté.
-Concernant le bug que tu as remonté, à confirmer avec Samia, mais la solution idéale serait de migrer tous les anciens cases vers la dernière version, comme le faisait Laurent. En effet, sur les anciens cases, tous les paramètres ne sont pas sauvegardés au niveau du process, ce qui pose problème lorsque tu passes par Complete Work Item.
+----
