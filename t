@@ -1,93 +1,40 @@
-var pollPromise = null;
-var inFlight = false;
-var tries = 0;
-var MAX_TRIES = 90; // ex: 90s après le démarrage du polling
-var baselineStepId = null;
+Objet : Passation / Backup – point d’avancement & actions à suivre
 
-function getLatestStepId(steps) {
-  if (!Array.isArray(steps) || steps.length === 0) return null;
-  // on prend le plus grand id (ou adapte si tu as createdDate)
-  return steps.reduce((max, s) => Math.max(max, s.id), -Infinity);
-}
+Bonjour,
 
-function refresh(ev) {
-  var confirm = $mdDialog.confirm()
-    .title($translate.instant('refresh.dialog.title'))
-    .htmlContent($translate.instant('refresh.dialog.message'))
-    .targetEvent(ev)
-    .ok($translate.instant('refresh.dialog.ok'))
-    .cancel($translate.instant('refresh.dialog.cancel'));
+Voici le point de passation (backup) :
 
-  return $mdDialog.show(confirm).then(function () {
-    angular.element('loading').show();
-    stopPolling();
-    tries = 0; inFlight = false;
+Refresh data / création du step
 
-    // 1) baseline : dernier step AVANT refresh
-    return caseService.getCaseSteps(vm.caseType, vm.caseData.caseIdentifier)
-      .then(function (steps) {
-        baselineStepId = getLatestStepId(steps);
-      })
-      .catch(function () {
-        baselineStepId = null; // si erreur, on continue quand même
-      })
-      // 2) déclenche refresh async (AMX)
-      .then(function () {
-        return caseService.refresh(vm.caseType, vm.caseData.caseIdentifier);
-      })
-      // 3) attend 30s MIN avant polling
-      .then(function () {
-        return $timeout(function () {
-          startPolling();
-        }, 30000);
-      })
-      .catch(function (err) {
-        angular.element('loading').hide();
-        $log.error('refresh failed', err);
-      });
-  });
-}
+Le refresh data prend ~30 secondes (appel AMX asynchrone, pas de retour direct).
 
-function startPolling() {
-  stopPolling();
-  pollPromise = $interval(pollTick, 1000);
-}
+La solution actuelle consiste à afficher un spinner pendant ~30s, le temps que le nouveau stepId soit généré.
 
-function stopPolling() {
-  if (pollPromise) {
-    $interval.cancel(pollPromise);
-    pollPromise = null;
-  }
-}
+À l’issue des 30s, le case passe en “alloué” à la personne connectée.
+→ Ce comportement peut être ajusté si besoin (case “offert” par défaut ou non).
 
-function pollTick() {
-  if (inFlight) return;
-  inFlight = true;
-  tries++;
+Requête
 
-  return caseService.getCaseSteps(vm.caseType, vm.caseData.caseIdentifier)
-    .then(function (steps) {
-      var latestId = getLatestStepId(steps);
+Pour mémoire, j’ai exécuté la requête sur tous les environnements.
 
-      // ✅ on attend un nouveau step différent (ou supérieur) au baseline
-      if (latestId && (!baselineStepId || latestId > baselineStepId)) {
-        stopPolling();
-        return caseService.testf(vm.caseType, vm.caseData.caseIdentifier, latestId)
-          .finally(function () {
-            angular.element('loading').hide();
-            $state.go(previous.state, previous.params);
-          });
-      }
+Liquibase / Déploiements
 
-      if (tries >= MAX_TRIES) {
-        stopPolling();
-        angular.element('loading').hide();
-        $log.warn('Timeout: aucun nouveau step après refresh');
-      }
-    })
-    .finally(function () {
-      inFlight = false;
-    });
-}
+Si les soucis Liquibase sont résolus : tester le job Liquibase sur tous les environnements et demander à OPS de relancer le déploiement Liquibase.
+→ À voir avec Kamal / Abdelghani / Nasser en cas de blocage.
 
-$scope.$on('$destroy', stopPolling);
+Tickets livrés en INT :
+
+LS_TCBPM-934 : fix mergé sur develop, livré en intégration
+
+LS_TCBPM-478 : fix mergé sur develop, livré en intégration
+
+À faire / suivi :
+
+Tester les pipelines de déploiement en INT et confirmer avec Abdelatif si tout est OK ou s’il y a un souci.
+
+Vérifier avec Nasser l’état des sujets Liquibase et relancer le déploiement si nécessaire.
+
+Les tickets en “Ready” : je ne les ai pas encore commencés.
+
+Merci,
+Imad BELMOUJAHID
