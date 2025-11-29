@@ -1,10 +1,14 @@
-// dans le controller
-vm.refresh = refresh;
-
 var pollPromise = null;
 var inFlight = false;
 var tries = 0;
-var MAX_TRIES = 60; // 60s max
+var MAX_TRIES = 90; // ex: 90s après le démarrage du polling
+var baselineStepId = null;
+
+function getLatestStepId(steps) {
+  if (!Array.isArray(steps) || steps.length === 0) return null;
+  // on prend le plus grand id (ou adapte si tu as createdDate)
+  return steps.reduce((max, s) => Math.max(max, s.id), -Infinity);
+}
 
 function refresh(ev) {
   var confirm = $mdDialog.confirm()
@@ -16,26 +20,36 @@ function refresh(ev) {
 
   return $mdDialog.show(confirm).then(function () {
     angular.element('loading').show();
+    stopPolling();
+    tries = 0; inFlight = false;
 
-    stopPolling();        // évite d’empiler plusieurs intervals
-    tries = 0;
-    inFlight = false;
-
-    // 1) déclenche le refresh
-    return caseService.refresh(vm.caseType, vm.caseData.caseIdentifier)
+    // 1) baseline : dernier step AVANT refresh
+    return caseService.getCaseSteps(vm.caseType, vm.caseData.caseIdentifier)
+      .then(function (steps) {
+        baselineStepId = getLatestStepId(steps);
+      })
+      .catch(function () {
+        baselineStepId = null; // si erreur, on continue quand même
+      })
+      // 2) déclenche refresh async (AMX)
       .then(function () {
-        // 2) puis on poll jusqu'à avoir les steps
-        startPolling();
+        return caseService.refresh(vm.caseType, vm.caseData.caseIdentifier);
+      })
+      // 3) attend 30s MIN avant polling
+      .then(function () {
+        return $timeout(function () {
+          startPolling();
+        }, 30000);
       })
       .catch(function (err) {
         angular.element('loading').hide();
-        $log.error('Refresh failed', err);
-        throw err;
+        $log.error('refresh failed', err);
       });
   });
 }
 
 function startPolling() {
+  stopPolling();
   pollPromise = $interval(pollTick, 1000);
 }
 
@@ -47,20 +61,18 @@ function stopPolling() {
 }
 
 function pollTick() {
-  if (inFlight) return;      // empêche chevauchement si l’appel > 1s
+  if (inFlight) return;
   inFlight = true;
   tries++;
 
   return caseService.getCaseSteps(vm.caseType, vm.caseData.caseIdentifier)
-    .then(function (res) {
-      // si ton service renvoie le response $http, décommente la ligne suivante :
-      // res = res && res.data ? res.data : res;
+    .then(function (steps) {
+      var latestId = getLatestStepId(steps);
 
-      var steps = Array.isArray(res) ? res : [];
-      if (steps.length > 0) {
+      // ✅ on attend un nouveau step différent (ou supérieur) au baseline
+      if (latestId && (!baselineStepId || latestId > baselineStepId)) {
         stopPolling();
-
-        return caseService.testf(vm.caseType, vm.caseData.caseIdentifier, steps[0].id)
+        return caseService.testf(vm.caseType, vm.caseData.caseIdentifier, latestId)
           .finally(function () {
             angular.element('loading').hide();
             $state.go(previous.state, previous.params);
@@ -70,18 +82,12 @@ function pollTick() {
       if (tries >= MAX_TRIES) {
         stopPolling();
         angular.element('loading').hide();
-        $log.warn('Timeout: aucun step après ' + MAX_TRIES + ' tentatives');
+        $log.warn('Timeout: aucun nouveau step après refresh');
       }
-    })
-    .catch(function (err) {
-      stopPolling();
-      angular.element('loading').hide();
-      $log.error('Polling failed', err);
     })
     .finally(function () {
       inFlight = false;
     });
 }
 
-// important : stop si on quitte la vue
 $scope.$on('$destroy', stopPolling);
