@@ -1,8 +1,8 @@
-Objet : Passation / Backup – point d’avancement & actions à suivre
+Objet : Mail de backup – passation & disponibilités
 
 Bonjour,
 
-Voici le point de passation (backup) :
+Voici le mail de backup (point de passation) :
 
 Refresh data / création du step
 
@@ -35,6 +35,14 @@ Tester les pipelines de déploiement en INT et confirmer avec Abdelatif si tout 
 Vérifier avec Nasser l’état des sujets Liquibase et relancer le déploiement si nécessaire.
 
 Les tickets en “Ready” : je ne les ai pas encore commencés.
+
+Disponibilités / congés :
+
+Je serai en congés du 1 au 5 décembre, puis du 9 au 12 décembre, ainsi que le 26 décembre (déjà validé/fermé côté LS).
+
+Je serai présent le 8 décembre.
+
+En cas d’urgence, je reste joignable sur WhatsApp.
 
 Merci,
 Imad BELMOUJAHID
