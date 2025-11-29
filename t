@@ -40,7 +40,9 @@ Disponibilités / congés :
 
 Je serai en congés du 1 au 5 décembre, puis du 9 au 12 décembre, ainsi que le 26 décembre (déjà validé/fermé côté LS).
 
-Je serai présent le 8 décembre.
+Je serai présent le 8 décembre, et je serai également présent au QAB.
+
+Sarra, je t’envoie un texto pour faire la réservation.
 
 En cas d’urgence, je reste joignable sur WhatsApp.
 
