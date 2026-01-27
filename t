@@ -1,1 +1,1 @@
-Salut, est-ce que tu peux me fournir un cas de test valide (données + étapes) à exécuter sur l’environnement INT (intégration) ? J’en ai besoin pour vérifier que tout est OK. Merci !
+On a un problème entre ECC et GEV depuis ce week-end : on ne reçoit plus d’événements. Je ne sais pas s’il faut redémarrer le GEV ou s’il y a autre chose à vérifier.
