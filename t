@@ -1,14 +1,5 @@
-List<FieldType> filteredInouts = completeWorkItem.getWorkItemPayLoad()
-    .getDataModel()
-    .getInouts()
-    .stream()
-    .filter(f -> f == null || !"Complex".equalsIgnoreCase(f.getType()))
-    .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
-
-// puis tu remplaces dans ton modèle si tu as un setter
-completeWorkItem.getWorkItemPayLoad()
-    .getDataModel()
-    .setInouts(filteredInouts);
+DataModel dm = completeWorkItem.getWorkItemPayLoad().getDataModel();
+dm.getInouts().removeIf(f -> f != null && "Complex".equalsIgnoreCase(f.getType()));
 
 
 https://docs.tibco.com/pub/amx-bpm/4.3.3/doc/html/BPM_Developers_Guide/soap-api-saveopenworkitem.htm
