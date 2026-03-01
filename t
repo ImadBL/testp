@@ -1,49 +1,28 @@
-public void transformCaseStatusToSimple(DataModel dataModel) {
-    if (dataModel == null || dataModel.getInouts() == null) {
-        return;
+private Object extractComplexValue(FieldType field) {
+    if (field.getComplexSpec() == null) {
+        return null;
     }
 
-    List<FieldType> inouts = dataModel.getInouts();
+    Object value = field.getComplexSpec().getValue();
 
-    FieldType complexField = null;
-    String caseStatus = null;
-
-    for (FieldType field : inouts) {
-        if (field == null) {
-            continue;
-        }
-
-        if ("Complex".equalsIgnoreCase(field.getType())
-                && "ToCompleteCase".equals(field.getName())) {
-
-            complexField = field;
-
-            // 1) Récupérer la valeur du complex
-            Object value = extractComplexValue(field);
-
-            // 2) Extraire caseStatus depuis l'objet complexe
-            caseStatus = extractCaseStatus(value);
-            break;
-        }
+    // si c'est enveloppé dans un JAXBElement
+    if (value instanceof jakarta.xml.bind.JAXBElement<?> jaxb) {
+        return jaxb.getValue();
     }
 
-    if (complexField == null || caseStatus == null || caseStatus.isBlank()) {
-        return;
+    return value;
+}
+
+private String extractCaseStatus(Object value) {
+    if (value == null) {
+        return null;
     }
 
-    // 3) Supprimer l'ancien inout complex
-    inouts.remove(complexField);
+    // Cas direct : l'objet JAXB généré
+    if (value instanceof ToCompleteElement toCompleteElement) {
+        return toCompleteElement.getCaseStatus();
+    }
 
-    // 4) Créer le nouveau inout simple
-    FieldType simpleField = new FieldType();
-    simpleField.setName("caseStatus"); // ou "decision" si c'est ce que tu veux côté XML
-    simpleField.setType("simple");
-
-    SimpleSpecType simpleSpec = new SimpleSpecType();
-    simpleSpec.setValue(caseStatus);
-
-    simpleField.setSimpleSpec(simpleSpec);
-
-    // 5) Ajouter le nouveau inout simple
-    inouts.add(simpleField);
+    // Si besoin, tu peux ajouter d'autres cas ici
+    return null;
 }
