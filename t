@@ -27,3 +27,12 @@ function compareVersions(v1, v2) {
 
     return 0;
 }
+
+
+vm.shouldShowNewOptions('1.9.5.20251014110142453')   // false
+vm.shouldShowNewOptions('1.9.10.20260204155520234')  // true
+vm.shouldShowNewOptions('1.9.11.20260204155520234')  // true
+
+<div ng-if="vm.shouldShowNewOptions(step.version)">
+    <!-- nouvelles options -->
+</div>
