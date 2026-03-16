@@ -1,45 +1,29 @@
--Djava.net.preferIPv4Stack=true
+vm.latestStepVersion = '1.9.10';
 
-System.out.println("AS400 host=" + host);
-System.out.println("AS400 port=" + port);
-System.out.println("remoteIPClient=" + remoteIpClient);
-System.out.println("terminalType=" + terminalType);
-System.out.println("timeout=" + timeout);
+vm.shouldShowNewOptions = function(stepVersion) {
+    return compareVersions(extractBaseVersion(stepVersion), vm.latestStepVersion) >= 0;
+};
 
+function extractBaseVersion(version) {
+    if (!version) return '0.0.0';
 
-@Override
-public void completeWorkItem(long workItemId, OpenWorkItemDto payload, Map<String, String> payoutParameters)
-        throws CompleteWorkItemException {
-    try {
-        CompleteWorkItem completeWorkItem =
-                itemReworkMapper.createCompleteWorkItem(workItemId, payload, payoutParameters);
+    var parts = version.split('.');
+    return parts.slice(0, 3).join('.'); // garde seulement major.minor.patch
+}
 
-        DataModel dm = completeWorkItem.getWorkItemPayload().getDataModel();
+function compareVersions(v1, v2) {
+    var a = v1.split('.').map(Number);
+    var b = v2.split('.').map(Number);
 
-        if (dm.getInOuts() == null) {
-            dm.setInOuts(new ArrayList<>());
-        }
+    var maxLength = Math.max(a.length, b.length);
 
-        dm.getInOuts().removeIf(f ->
-                f != null && "complex".equalsIgnoreCase(f.getType()));
+    for (var i = 0; i < maxLength; i++) {
+        var n1 = a[i] || 0;
+        var n2 = b[i] || 0;
 
-        boolean hasSimpleDecision = dm.getInOuts().stream()
-                .anyMatch(f -> f != null
-                        && "simple".equalsIgnoreCase(f.getType())
-                        && "decision".equalsIgnoreCase(f.getName()));
-
-        if (!hasSimpleDecision) {
-            FieldType field = new FieldType();
-            field.setName("decision");
-            field.setType("simple");
-            dm.getInOuts().add(field);
-        }
-
-        completeWorkItem.getWorkItemPayload().setDataModel(dm);
-        workItemManagementService.completeWorkItem(completeWorkItem);
-
-    } catch (Exception e) {
-        log.error("Error during the completion of the item", e);
-        throw new CompleteWorkItemException("Error during the complete workitem action", e);
+        if (n1 > n2) return 1;
+        if (n1 < n2) return -1;
     }
+
+    return 0;
 }
