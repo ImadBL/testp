@@ -1,38 +1,164 @@
-vm.latestStepVersion = '1.9.10';
+import com.microsoft.graph.models.MailFolder;
+import com.microsoft.graph.models.MailFolderCollectionResponse;
 
-vm.shouldShowNewOptions = function(stepVersion) {
-    return compareVersions(extractBaseVersion(stepVersion), vm.latestStepVersion) >= 0;
-};
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
-function extractBaseVersion(version) {
-    if (!version) return '0.0.0';
+private List<MailFolder> getAllChildFolders(String smtpAddress, String parentFolderId) {
+    init();
 
-    var parts = version.split('.');
-    return parts.slice(0, 3).join('.'); // garde seulement major.minor.patch
-}
+    List<MailFolder> allFolders = new ArrayList<>();
 
-function compareVersions(v1, v2) {
-    var a = v1.split('.').map(Number);
-    var b = v2.split('.').map(Number);
+    MailFolderCollectionResponse page = graphServiceClient
+        .users()
+        .byUserId(smtpAddress)
+        .mailFolders()
+        .byMailFolderId(parentFolderId)
+        .childFolders()
+        .get(requestConfiguration -> {
+            // optionnel : augmente la taille de page pour limiter le nombre d'appels
+            requestConfiguration.queryParameters.top = 100;
+        });
 
-    var maxLength = Math.max(a.length, b.length);
+    while (page != null) {
+        if (page.getValue() != null) {
+            allFolders.addAll(page.getValue());
+        }
 
-    for (var i = 0; i < maxLength; i++) {
-        var n1 = a[i] || 0;
-        var n2 = b[i] || 0;
+        String nextLink = page.getOdataNextLink();
+        if (nextLink == null || nextLink.isBlank()) {
+            break;
+        }
 
-        if (n1 > n2) return 1;
-        if (n1 < n2) return -1;
+        page = graphServiceClient
+            .users()
+            .byUserId(smtpAddress)
+            .mailFolders()
+            .byMailFolderId(parentFolderId)
+            .childFolders()
+            .withUrl(nextLink)
+            .get();
     }
 
-    return 0;
+    return allFolders;
 }
 
+List<MailFolder> childFolders =
+    getAllChildFolders(mailBoxDTO.getMailBox(), rootMailFolder.get().getId());
 
-vm.shouldShowNewOptions('1.9.5.20251014110142453')   // false
-vm.shouldShowNewOptions('1.9.10.20260204155520234')  // true
-vm.shouldShowNewOptions('1.9.11.20260204155520234')  // true
+boolean archiveFound = false;
+boolean rejectFound = false;
 
-<div ng-if="vm.shouldShowNewOptions(step.version)">
-    <!-- nouvelles options -->
-</div>
+for (MailFolder mf : childFolders) {
+    if (mf.getDisplayName().equalsIgnoreCase(mailBoxDTO.getArchiveChildPath())) {
+        mailBoxDTO.setArchiveChildPathId(mf.getId());
+        archiveFound = true;
+    }
+
+    if (mf.getDisplayName().equalsIgnoreCase(mailBoxDTO.getRejectChildPath())) {
+        mailBoxDTO.setRejectChildPathId(mf.getId());
+        rejectFound = true;
+    }
+
+    if (archiveFound && rejectFound) {
+        break;
+    }
+}
+
+@Override
+public Optional<Object> findFoldersId(MailBoxDTO mailBoxDTO) throws ApiException {
+    mailBoxDTO.setChildPath();
+
+    try {
+        Optional<MailFolder> rootMailFolder;
+
+        if (mailBoxDTO.getFolderRoot().equalsIgnoreCase("inbox")) {
+            init();
+            rootMailFolder = Optional.ofNullable(
+                graphServiceClient
+                    .users()
+                    .byUserId(mailBoxDTO.getMailBox())
+                    .mailFolders()
+                    .byMailFolderId("inbox")
+                    .get(r -> addRequestOptions(r.headers))
+            );
+        } else {
+            rootMailFolder = findRootFolderByNameOrCreateIt(
+                mailBoxDTO.getMailBox(),
+                mailBoxDTO.getFolderRoot()
+            );
+        }
+
+        if (rootMailFolder.isEmpty()) {
+            log.error("rootFolder not detected, cannot continue");
+            return Optional.empty();
+        }
+
+        mailBoxDTO.setFolderRootId(rootMailFolder.get().getId());
+        mailBoxDTO.setTotalItemCount(rootMailFolder.get().getTotalItemCount());
+
+        List<MailFolder> childFolders =
+            getAllChildFolders(mailBoxDTO.getMailBox(), rootMailFolder.get().getId());
+
+        boolean archiveFound = false;
+        boolean rejectFound = false;
+
+        for (MailFolder mf : childFolders) {
+            if (mf.getDisplayName().equalsIgnoreCase(mailBoxDTO.getArchiveChildPath())) {
+                mailBoxDTO.setArchiveChildPathId(mf.getId());
+                archiveFound = true;
+            }
+
+            if (mf.getDisplayName().equalsIgnoreCase(mailBoxDTO.getRejectChildPath())) {
+                mailBoxDTO.setRejectChildPathId(mf.getId());
+                rejectFound = true;
+            }
+
+            if (archiveFound && rejectFound) {
+                break;
+            }
+        }
+
+        Optional<MailFolder> childFolder;
+
+        if (!archiveFound) {
+            childFolder = createChildFolder(
+                mailBoxDTO.getMailBox(),
+                mailBoxDTO.getFolderRootId(),
+                mailBoxDTO.getArchiveChildPath()
+            );
+            if (childFolder.isPresent()) {
+                mailBoxDTO.setArchiveChildPathId(childFolder.get().getId());
+            } else {
+                log.error("Error: Archive Child Folder Not Created {}, {}, {}",
+                    mailBoxDTO.getMailBox(),
+                    mailBoxDTO.getFolderRootId(),
+                    mailBoxDTO.getArchiveChildPath());
+            }
+        }
+
+        if (!rejectFound) {
+            childFolder = createChildFolder(
+                mailBoxDTO.getMailBox(),
+                mailBoxDTO.getFolderRootId(),
+                mailBoxDTO.getRejectChildPath()
+            );
+            if (childFolder.isPresent()) {
+                mailBoxDTO.setRejectChildPathId(childFolder.get().getId());
+            } else {
+                log.error("Error: Reject Child Folder Not Created {}, {}, {}",
+                    mailBoxDTO.getMailBox(),
+                    mailBoxDTO.getFolderRootId(),
+                    mailBoxDTO.getRejectChildPath());
+            }
+        }
+
+        return Optional.of(mailBoxDTO);
+
+    } catch (ApiException e) {
+        log.error("Erreur pour findFoldersId", e);
+        throw e;
+    }
+}
