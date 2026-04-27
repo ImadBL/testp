@@ -1,3 +1,26 @@
+function resolveDocsMetadata(comment) {
+  if (!comment.docs || comment.docs.length === 0) {
+    comment.docsReady = true;
+    return $q.resolve();
+  }
+  var docPromises = comment.docs.map(function(doc) {
+    if (doc.metadata) {
+      // metadata déjà présente, rien à faire
+      return $q.resolve();
+    }
+    // metadata absente → on appelle iterateDoc
+    return iterateDoc(doc.docId).then(function(docData) {
+      doc.metadata = docData.metadata;
+      // adapter selon les champs retournés par iterateDoc :
+      doc.fileName    = docData.metadata.fileName    || doc.docId;
+      doc.downloadUrl = docData.metadata.downloadUrl || null;
+    });
+  });
+  return $q.all(docPromises).then(function() {
+    comment.docsReady = true;
+  });
+}
+
 .docLinkRow {
   display: inline-flex;
   align-items: center;
