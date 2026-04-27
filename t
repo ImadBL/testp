@@ -1,3 +1,12 @@
+.docLinkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}
+
 // Supposons que vm.docs est le tableau global de tous les documents
 // [ { messageId, fileName, downloadUrl }, ... ]
 // Étape 1 : indexer les docs par messageId (O(n), plus efficace qu'un filter dans le template)
