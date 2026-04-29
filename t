@@ -1,27 +1,20 @@
-<div ng-repeat="doc in comment.docs" class="docLinkRow" style="border-bottom: 1px solid currentColor;">
+Bonjour,
 
-    <div ng-class="{'bpm-document-visited': doc.visited, 'bpm-document-ged-error': doc.metadata == null || doc.metadata == ''}"
-         style="display: flex; align-items: center; gap: 8px; position: relative;"
-         class="bpm-document"
-         ng-click="vm.open(doc, $event)">
+Voici l’avancement sur l’EVOL :
 
-        <!-- Icône trombone -->
-        <md-icon class="bpm-document-icon" 
-                 md-svg-icon="icon_attachment" 
-                 style="flex-shrink: 0; width: 20px; height: 20px;">
-        </md-icon>
+Le nombre de documents échangés est corrigé, aussi bien pour l’agent que pour les anciens commentaires.
+L’upload de plus de 5 fichiers fonctionne correctement : l’affichage montre “5 fichiers” et les autres sont masqués via le bouton “hide”.
+Par défaut, sur le dernier message client, les documents sont maintenant affichés.
+Le message client est identifié via :
+comment.author === 'comment.author.clientsComment'
+Si besoin, vous pouvez ajuster la condition (l’image ci-dessous est uniquement un exemple et ne concerne pas un message client réel).
+Le bug signalé est corrigé.
+Quand les documents ne sont pas disponibles, le message s’affiche actuellement sans le filename. À voir si on préfère masquer complètement le message dans ce cas.
+L’ouverture des documents fonctionne correctement.
+L’icône “visited” est OK.
+Le rafraîchissement automatique est OK.
+L’attachement des documents est OK.
 
-        <!-- Icône ✓ uniquement si doc visité -->
-        <md-icon ng-if="doc.visited"
-                 class="bpm-document-visited-icon" 
-                 md-svg-icon="icon_done" 
-                 style="position: absolute; top: -5px; left: 12px; width: 12px; height: 12px;">
-        </md-icon>
+Point restant :
 
-        <!-- Nom du fichier -->
-        <a title="{{doc.fileName}}" class="docLink">
-            {{doc.metadata.externalDocumentName | truncate:30}}
-        </a>
-
-    </div>
-</div>
+Lorsqu’on attache des documents déjà attachés auparavant, il faut actuellement rafraîchir la page pour que les documents disparaissent du message 2 et apparaissent dans le message 1.
