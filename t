@@ -3,11 +3,27 @@ CREATE SEQUENCE BATCH_JOB_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_STEP_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 
 
-Map<String, JobParameter<?>> parameters = new HashMap<>();
+public void clearNbDocsExchange(OpenWorkItemDto dataInput) {
+    if (dataInput == null
+            || dataInput.getCaseData() == null
+            || !dataInput.getCaseData().isObject()
+            || !dataInput.getCaseData().hasNonNull("customerPortalIdRequest")) {
+        return;
+    }
 
-parameters.put("launch_date", new JobParameter<>(Instant.now().toEpochMilli(), Long.class));
-parameters.put("file", new JobParameter<>(pathTestFile, String.class));
-parameters.put("user_id", new JobParameter<>("test", String.class));
-parameters.put("user_name", new JobParameter<>("test", String.class));
+    ObjectNode caseData = (ObjectNode) dataInput.getCaseData();
 
-JobParameters jobParameters = new JobParameters(parameters);
+    removeNbDocsExchanged(caseData.get("comments"));
+    removeNbDocsExchanged(caseData.get("commentsInternal"));
+    removeNbDocsExchanged(caseData.get("commentsExternal"));
+}
+
+private void removeNbDocsExchanged(JsonNode node) {
+    if (node instanceof ArrayNode comments) {
+        for (JsonNode comment : comments) {
+            if (comment instanceof ObjectNode objectNode) {
+                objectNode.remove("nbDocsExchanged");
+            }
+        }
+    }
+}
