@@ -2,58 +2,24 @@ CREATE SEQUENCE BATCH_JOB_INSTANCE_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_JOB_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_STEP_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 
+Bonjour,
 
-<input
-  ng-if="vm.optionNotRequired"
-  maxlength="8"
-  minlength="8"
-  md-maxlength="8"
-  name="enterNumber"
-  ng-model="vm.searchValue"
-  ng-keydown="$event.keyCode === 13 ? vm.search($event) : null">
+Les tickets **1262** et **1264** ont été corrigés et mergés sur la branche **develop**. Ils sont prêts à être testés avant livraison en **INT** et **EVO**.
 
+Je te transfère également le ticket **987**.
 
-function search($event) {
-    if ($event) {
-        $event.preventDefault();
-        $event.stopPropagation();
-    }
+**Ticket 1202 :**
+D'après mes analyses, le problème semble être lié au mécanisme de migration automatique des cases que nous avons livré précédemment. Il faudrait remettre la version antérieure afin de retester le comportement et réfléchir à une autre solution si nécessaire. Si tu as un peu de temps, pourrais-tu regarder ce point ?
 
-    vm.ngModel = null;
+**Ticket 1275 :**
+Le problème est assez étrange et je n'ai pas encore d'explication claire. En base, je constate la présence de la même pièce documentaire avec le même **messageId**, dupliquée trois fois. Le sujet est à réanalyser avec Samia et il faudrait essayer de reproduire le problème sur les environnements hors production.
 
-    if (!vm.searchValue) {
-        return;
-    }
+Concernant l'**US 27**, elle est toujours en cours. Il me reste les tests à finaliser et je les terminerai dès mon retour la semaine prochaine.
 
-    vm.searchValue = vm.searchValue.toUpperCase();
-    vm.checkInProgress = true;
+Je reste joignable sur WhatsApp en cas d'urgence : **06 23 76 96 96**.
 
-    SEARCH_FUNCTIONS[vm.searchType].search(vm.country, vm.searchValue)
-        .then(function (response) {
-            vm.checkInProgress = false;
-            vm.ngModel = response;
+Merci et bonne journée.
 
-            if (vm.ngModel.partitionId !== vm.partitionId) {
-                vm.form.enterNumber.$setValidity('notConform', false);
-                return;
-            }
+Cordialement,
 
-            vm.form.enterNumber.$setValidity('notConform', true);
-            vm.form.enterNumber.$setValidity('notfound', true);
-            vm.form.enterNumber.$setValidity('techerror', true);
-        })
-        .catch(function (error) {
-            displayMessage(error);
-        });
-}
-
-<md-button
-  type="button"
-  class="md-icon-button"
-  id="bpm-button"
-  ng-if="!vm.checkInProgress"
-  ng-click="vm.search($event)">
-
-if (vm.form.$invalid || vm.checkInProgress) {
-    return;
-}
+Imad
