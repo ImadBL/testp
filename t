@@ -2,10 +2,13 @@ CREATE SEQUENCE BATCH_JOB_INSTANCE_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_JOB_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_STEP_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 
-Sarra, je te propose de m'affecter ce defect. Je m'occuperai de corriger la deuxième partie, et de ton côté, tu pourras regarder les autres defects.
+Vendredi après-midi, je n’ai pas pu aller plus loin, car je manquais de temps et les problèmes HVD étaient assez pénalisants.
 
-J'ai commencé à chercher, mais je n'ai rien trouvé de nouveau pour le moment. J'attends de trouver un projet qui m'intéresse vraiment.
+Je laisse mon analyse à Sarra afin qu’elle puisse suivre le sujet en attendant mon retour mercredi.
 
-Ah d'accord. À partir de quand le transfert est-il prévu ?
+D’après mes analyses, côté backend, les requêtes sont envoyées de la même manière dans les scénarios OK et KO. En revanche, côté front, j’ai identifié plusieurs comportements suspects qui nécessitent une nouvelle analyse et des correctifs :
 
-Je pense qu'il faudrait qu'on commence à chercher quelque chose pour moi également.
+* Le service `generateMsgId` ne devrait pas être appelé tant que le message n’a pas été envoyé.
+* Plusieurs messages inhabituels apparaissent dans la console.
+* Tester également la version sans les évolutions `generateMsgId` et `generatePortalClientId`.
+* Vérifier si les données qui ne passent pas lors des mises à jour des dossiers (« update cases ») sont écrasées ou non.
