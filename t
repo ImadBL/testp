@@ -2,6 +2,12 @@ CREATE SEQUENCE BATCH_JOB_INSTANCE_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_JOB_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE BATCH_STEP_EXECUTION_SEQ START WITH 1 INCREMENT BY 1;
 
-L’erreur ne semble pas être liée aux imports : les processus ont bien été importés et sont correctement présents en base.
+J'ai un point d'interrogation concernant le comportement lors du `completeWorkItem` pour passer une case en `waiting`, avec un payload vide contenant uniquement la raison d'attente.
 
-Il faudrait analyser ce bug plus en détail avec Samia afin d’identifier pourquoi les dossiers sont créés directement avec un SLA à 0 jour.
+Ce qui est étrange, c'est qu'AMX semble effectuer des traitements inattendus : les données `portalId` et `comment.external` sont écrasées.
+
+J'ai corrigé le problème en ajoutant deux opérations supplémentaires : `closeItem` puis `openAndLocateWorkItem`.
+
+Le problème est résolu avec ce contournement, mais j'aimerais comprendre la cause racine. Si vous avez une explication, je suis preneur.
+
+Pour information, le problème est reproductible sur une nouvelle case.
