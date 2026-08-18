@@ -1,3 +1,16 @@
+<md-list-item ng-if="vm.caseType === 'DOCINCS'">
+    <h4 translate="business.customerPortal.customerregistrated">
+        hasCustomerPortalId
+    </h4>
+
+    <p class="dash-empty-value">
+        <span>
+            {{ 'business.flag.ecc' | translate }} :
+            {{ vm.hasCustomerPortalId ? 'true' : 'false' }}
+        </span>
+    </p>
+</md-list-item>
+
 ParentController.$inject = [
     '$q',
     'thirdpartyService',
