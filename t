@@ -1,1 +1,1 @@
-J’ai corrigé le problème de double événement. Il était lié à l’ajout des audits de notre côté avant l’envoi du message, ce qui provoquait une exception et déclenchait une nouvelle tentative. Pourriez-vous retester et me confirmer que le problème est bien résolu ?
+
