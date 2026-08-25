@@ -1,2 +1,1 @@
--
-Je crois que le souci vient simplement de l’expiration du token, non ? La dernière fois que tu as corrigé le même problème, c’était le 26 mai, soit il y a exactement trois mois.
+Je suis en train de builder le batch. Ensuite, je dois ajouter les services AMX afin d’avoir une version fonctionnelle. De ton côté, concentre-toi sur le chiffrage des defects en attendant que je pousse le projet.
