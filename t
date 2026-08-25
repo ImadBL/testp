@@ -1,1 +1,1 @@
-Je suis en train de builder le batch. Ensuite, je dois ajouter les services AMX afin d’avoir une version fonctionnelle. De ton côté, concentre-toi sur le chiffrage des defects en attendant que je pousse le projet.
+-
