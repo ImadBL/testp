@@ -1,1 +1,1 @@
-La livraison en recette socle est terminée. Je t’ai affecté tous les tickets livrés. Si tu as des questions ou si tu constates des anomalies, n’hésite pas à me contacter directement avant de créer des defects. Cela nous permettra d’éviter des allers-retours inutiles.
+suis pas étonné. Normalement, si certains points ne sont pas clairs, tu peux revenir vers Benjamin ou contacter directement l’utilisateur concerné si nécessaire.
