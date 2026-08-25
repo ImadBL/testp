@@ -1,49 +1,6 @@
-function calculate(data) {
-    var country = normalize(data.country);
-    var accessMode = normalizeAccessMode(data.accessMode);
+Remarque : j’ai utilisé la liste des types déjà présente à d’autres endroits de l’IHM. Je ne me suis pas basé sur ce fichier, car certains types qui y figurent ne sont pas disponibles dans l’IHM.
 
-    var hasPortalId =
-        hasExistingCustomerPortalId(
-            data.customerPortalId
-        );
+Si des sous-types sont manquants, il faudrait vérifier si ce fichier de référence a déjà été pris en compte dans une précédente implémentation. Si c’est le cas, il faudra créer un defect et le rattacher à l’US à l’origine de cette implémentation.
 
-    var registered = toBoolean(data.registered);
-    var eligible = toBoolean(data.eligible);
 
-    var conditionsValid =
-        hasPortalId ||
-        (registered && eligible);
-
-    var mustCheckAccessMode =
-        country === 'GBR' ||
-        country === 'FRA';
-
-    var visible;
-    var readOnly = false;
-
-    if (!mustCheckAccessMode) {
-        // Pour les autres pays, accessMode est ignoré
-        visible = conditionsValid;
-    } else {
-        visible =
-            conditionsValid &&
-            (
-                accessMode === 'COMPLETE' ||
-                (
-                    accessMode === 'RESTRICTED' &&
-                    toBoolean(data.hasExistingMessages)
-                )
-            );
-
-        readOnly =
-            visible &&
-            accessMode === 'RESTRICTED';
-    }
-
-    return {
-        registered: registered,
-        visible: visible,
-        readOnly: readOnly,
-        canSend: visible && !readOnly
-    };
-}
+Vu avec Pierre et Benjamin : voici la nouvelle règle que nous avons appliquée à la suite d’un décalage constaté entre l’IHM et ECC. Pierre va également effectuer des tests sur ce point. Merci de voir directement avec lui.
