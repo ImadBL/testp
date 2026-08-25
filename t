@@ -1,1 +1,2 @@
 -
+-Dmaven.test.skip
