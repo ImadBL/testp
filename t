@@ -1,24 +1,28 @@
-private void archive(ArchiveCase archiveCase) {
+private String getOrCreateCorrelationId(
+        ArchiveCase archiveCase
+) {
 
-    String caseReference =
-            archiveCase.getCaseReference();
+    if (archiveCase.getArchiveCorrelationId() == null) {
 
-    if (client.isArchived(caseReference)) {
-        return;
-    }
-
-    String correlationId =
-            getOrCreateCorrelationId(archiveCase);
-
-    client.archive(
-            caseReference,
-            correlationId
-    );
-
-    if (!client.isArchived(caseReference)) {
-        throw new IllegalStateException(
-                "Archivage non confirmé pour la case "
-                        + caseReference
+        archiveCase.setArchiveCorrelationId(
+                UUID.randomUUID().toString()
         );
     }
+
+    return archiveCase.getArchiveCorrelationId();
+}
+
+private void markArchived(
+        ArchiveCase archiveCase
+) {
+
+    archiveCase.setArchiveStatus(
+            ArchiveStatus.ARCHIVED
+    );
+
+    archiveCase.setArchiveDate(
+            Instant.now()
+    );
+
+    archiveCase.setLastError(null);
 }
