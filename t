@@ -1,75 +1,49 @@
 
-import com.tibco.tibjms.TibjmsConnectionFactory;
-import jakarta.jms.ConnectionFactory;
-import lombok.RequiredArgsConstructor;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
-import org.springframework.jms.annotation.EnableJms;
-import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-@Configuration
-@EnableJms
-@RequiredArgsConstructor
+@Slf4j
+@Component
 @ConditionalOnProperty(
         name = "jms.enabled",
         havingValue = "true"
 )
-public class JmsConfig {
+public class ArchiveRequestListener {
 
-    private final Environment env;
+    @JmsListener(
+            destination = "${queue.name}",
+            containerFactory = "jmsListenerContainerFactory"
+    )
+    public void onMessage(Message message) throws JMSException {
 
-    @Bean
-    @Primary
-    public ConnectionFactory connectionFactory() throws Exception {
+        String messageId = message.getJMSMessageID();
 
-        TibjmsConnectionFactory factory =
-                new TibjmsConnectionFactory(
-                        env.getProperty("jms.url")
-                );
-
-        factory.setClientID(
-                "BATCH_CASE_PURGE_" + getHostname()
+        log.info(
+                "JMS message received - messageId={}",
+                messageId
         );
 
-        factory.setUserName(
-                env.getProperty("jms.username")
-        );
+        if (message instanceof TextMessage textMessage) {
 
-        factory.setUserPassword(
-                env.getProperty("jms.password")
-        );
+            String payload = textMessage.getText();
 
-        return factory;
-    }
+            log.info(
+                    "JMS payload received - messageId={}, payload={}",
+                    messageId,
+                    payload
+            );
 
-    @Bean
-    public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(
-            ConnectionFactory connectionFactory
-    ) {
+        } else {
 
-        DefaultJmsListenerContainerFactory factory =
-                new DefaultJmsListenerContainerFactory();
-
-        factory.setConnectionFactory(connectionFactory);
-
-        factory.setConcurrency("1");
-
-        return factory;
-    }
-
-    private String getHostname() {
-        try {
-            return InetAddress
-                    .getLocalHost()
-                    .getHostName();
-        } catch (UnknownHostException e) {
-            return "";
+            log.warn(
+                    "Unsupported JMS message type: {}",
+                    message.getClass().getName()
+            );
         }
     }
 }
