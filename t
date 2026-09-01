@@ -1,71 +1,44 @@
 
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
 
-import com.tibco.tibjms.TibjmsConnectionFactory;
-import com.tibco.tibjms.TibjmsQueue;
-import jakarta.jms.ConnectionFactory;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
-import org.springframework.jms.annotation.EnableJms;
-import org.springframework.jms.core.JmsTemplate;
+@Slf4j
+@Component
+public class ArchiveRequestListener {
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+    @JmsListener(
+            destination = "${queue.name}"
+    )
+    public void onMessage(Message message)
+            throws JMSException {
 
-@Configuration
-@EnableJms
-@RequiredArgsConstructor
-public class JmsConfig {
+        String messageId =
+                message.getJMSMessageID();
 
-    private final Environment env;
+        if (message instanceof TextMessage textMessage) {
 
-    @Bean
-    public JmsTemplate jmsTemplate(ConnectionFactory factory) {
+            String payload = textMessage.getText();
 
-        JmsTemplate jmsTemplate = new JmsTemplate(factory);
+            log.info(
+                    "Archive JMS event received: messageId={}, payload={}",
+                    messageId,
+                    payload
+            );
 
-        jmsTemplate.setDefaultDestination(
-                new TibjmsQueue(
-                        env.getProperty("queue.name")
-                )
-        );
+            // TODO :
+            // XML -> EventPublication
+            // récupérer Case ID / Case Type
+            // enregistrer BCP_ARCHIVE_REQUEST
+        } else {
 
-        return jmsTemplate;
-    }
-
-    @Bean
-    @Primary
-    public ConnectionFactory connectionFactory() throws Exception {
-
-        TibjmsConnectionFactory factory =
-                new TibjmsConnectionFactory(
-                        env.getProperty("jms.url")
-                );
-
-        factory.setClientID(
-                "RETENTION_BATCH_" + getHostname()
-        );
-
-        factory.setUserName(
-                env.getProperty("jms.username")
-        );
-
-        factory.setUserPassword(
-                env.getProperty("jms.password")
-        );
-
-        return factory;
-    }
-
-    private String getHostname() {
-        try {
-            return InetAddress
-                    .getLocalHost()
-                    .getHostName();
-        } catch (UnknownHostException e) {
-            return "";
+            log.warn(
+                    "Unsupported JMS message type: {}",
+                    message.getClass().getName()
+            );
         }
     }
 }
