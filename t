@@ -1,44 +1,23 @@
+<plugin>
+    <groupId>org.jvnet.jaxb</groupId>
+    <artifactId>jaxb-maven-plugin</artifactId>
+    <version>4.0.8</version>
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.TextMessage;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.jms.annotation.JmsListener;
-import org.springframework.stereotype.Component;
+    <executions>
+        <execution>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+        </execution>
+    </executions>
 
-@Slf4j
-@Component
-public class ArchiveRequestListener {
+    <configuration>
+        <schemaDirectory>
+            src/main/resources/xsd/
+        </schemaDirectory>
 
-    @JmsListener(
-            destination = "${queue.name}"
-    )
-    public void onMessage(Message message)
-            throws JMSException {
-
-        String messageId =
-                message.getJMSMessageID();
-
-        if (message instanceof TextMessage textMessage) {
-
-            String payload = textMessage.getText();
-
-            log.info(
-                    "Archive JMS event received: messageId={}, payload={}",
-                    messageId,
-                    payload
-            );
-
-            // TODO :
-            // XML -> EventPublication
-            // récupérer Case ID / Case Type
-            // enregistrer BCP_ARCHIVE_REQUEST
-        } else {
-
-            log.warn(
-                    "Unsupported JMS message type: {}",
-                    message.getClass().getName()
-            );
-        }
-    }
-}
+        <generatePackage>
+            xxx.generated
+        </generatePackage>
+    </configuration>
+</plugin>
