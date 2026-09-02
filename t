@@ -1,30 +1,38 @@
+@Service
+@RequiredArgsConstructor
+public class ArchiveCaseService {
 
-private void markArchiveFailure(
-        ArchiveCase archiveCase,
-        Exception exception
-) {
+    private final ArchiveCaseRepository repository;
 
-    int attemptCount =
-            archiveCase.getArchiveAttemptCount() + 1;
+    @Transactional
+    public ArchiveCase getOrCreateForPurge(
+            String caseReference,
+            String caseType
+    ) {
 
-    archiveCase.setArchiveAttemptCount(
-            attemptCount
-    );
+        return repository
+                .findByCaseReferenceAndCaseType(
+                        caseReference,
+                        caseType
+                )
+                .orElseGet(() -> {
 
-    archiveCase.setLastError(
-            truncateError(exception)
-    );
+                    ArchiveCase archiveCase =
+                            ArchiveCase.builder()
+                                    .caseReference(caseReference)
+                                    .caseType(caseType)
+                                    .source("PURGE")
+                                    .archiveStatus(
+                                            ArchiveStatus.PENDING
+                                    )
+                                    .archiveAttemptCount(0)
+                                    .createdAt(Instant.now())
+                                    .updatedAt(Instant.now())
+                                    .build();
 
-    if (attemptCount >= properties.maxRetries()) {
-
-        archiveCase.setArchiveStatus(
-                ArchiveStatus.ERROR_FINAL
-        );
-
-    } else {
-
-        archiveCase.setArchiveStatus(
-                ArchiveStatus.ERROR_RETRYABLE
-        );
+                    return repository.save(
+                            archiveCase
+                    );
+                });
     }
 }
