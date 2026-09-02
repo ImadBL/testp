@@ -1,25 +1,25 @@
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Modifying(
+            clearAutomatically = true,
+            flushAutomatically = true
+    )
     @Query("""
-            select rc
-              from RetentionCase rc
-             where rc.sourceType = :sourceType
-               and rc.purgeStatus = :purgeStatus
-               and (
-                    rc.claimedBy is null
-                    or rc.claimedAt < :expired
-               )
-             order by rc.id
+            update RetentionCase rc
+               set rc.purgeStatus = :ready,
+                   rc.updatedAt = :now
+             where rc.purgeStatus = :blocked
+               and rc.archiveCase is not null
+               and rc.archiveCase.archiveStatus = :archived
             """)
-    List<RetentionCase> findTbcCandidates(
-            @Param("sourceType")
-            CaseType sourceType,
+    int releaseArchivedCasesForPurge(
+            @Param("blocked")
+            PurgeStatus blocked,
 
-            @Param("purgeStatus")
-            PurgeStatus purgeStatus,
+            @Param("ready")
+            PurgeStatus ready,
 
-            @Param("expired")
-            Instant expired,
+            @Param("archived")
+            ArchiveStatus archived,
 
-            Pageable pageable
+            @Param("now")
+            Instant now
     );
-
