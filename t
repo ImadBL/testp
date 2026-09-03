@@ -1,12 +1,1 @@
-| Item                     | Description                                                                                        | Type                 | Criteria                                                             |
-| ------------------------ | -------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------------- |
-| Application architecture | Overview of the front end, back end, main components, and interactions with external applications. | Knowledge            | The overall architecture and main flows are understood.              |
-| Translation management   | Explain how translations are managed for the application, home page, and Spotfire.                 | Knowledge / Resource | Translation files can be located and updated.                        |
-| APIs and data models     | Present Swagger, REST/SOAP services, data models, and WSDL/XSD file locations.                     | Knowledge / Resource | APIs and data models can be located, understood, and updated.        |
-| Database and Liquibase   | Explain the location, format, and deployment process of Liquibase files.                           | Knowledge / Process  | A new database change can be created and deployed.                   |
-| Logs and monitoring      | Present log configuration, log levels, and ELK dashboards.                                         | Knowledge / Resource | Logs can be activated, searched, and analyzed.                       |
-| Git/GCL                  | Present repositories, branches, commits, and merge request practices.                              | Knowledge / Process  | Code changes can be committed and merged correctly.                  |
-| Release preparation      | Explain the build, configuration, deployment, and post-deployment checks.                          | Process              | A release can be prepared and deployed independently.                |
-| WFC batch jobs           | Explain their purpose, location, scheduling, monitoring, and restart process.                      | Knowledge / Process  | Batch jobs can be monitored and restarted when necessary.            |
-| Environments             | Present configuration files, URLs, access rights, and external dependencies.                       | Resource / Knowledge | Environment-specific resources and configurations can be identified. |
-| Operations and support   | Review known issues, ongoing tickets, documentation, and useful contacts.                          | Knowledge / Resource | Support information and current priorities are clearly identified.   |
+--------
