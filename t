@@ -1,4 +1,1 @@
-
-J’ai corrigé le souci en faisant en sorte que la page soit quand même affichée. Voilà, sur la capture d’écran, ce que l’utilisateur verra. Ensuite, ils pourront passer le case en statut Abandonné.
-
-Tu nous diras ce que tu en penses après ton échange avec le métier.
+Oui, Slah m’a remonté le souci hier. J’ai ajouté Issam dans nos échanges, puisque le problème semble venir de GEV. Il n’a pas encore trouvé la cause, donc l’analyse est toujours en cours. Je ne sais pas non plus si on arrivera à reproduire le problème.
