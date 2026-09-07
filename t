@@ -1,22 +1,14 @@
 ---
-private String buildTbcCriteria() {
+private List<Map<String, String>> extractCases(SearchResults result) {
 
-    String limitDate = formatDate(
-            ZonedDateTime.now(ZoneOffset.UTC)
-                    .minusMonths(24)
+    if (result == null
+            || result.getCaseReference() == null
+            || result.getCaseReference().isEmpty()) {
+
+        return List.of();
+    }
+
+    return getCasesSummaries(
+            result.getCaseReference()
     );
-
-    return "commons.creationDate<=" + limitDate;
-}
-
-private String formatDate(ZonedDateTime date) {
-
-    DateTimeFormatter formatter =
-            DateTimeFormatter.ofPattern(
-                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-            );
-
-    return date
-            .withZoneSameInstant(ZoneOffset.UTC)
-            .format(formatter);
 }
