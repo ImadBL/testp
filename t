@@ -1,33 +1,3 @@
-distinguer par type de case :
+La solution consiste à ne pas bloquer l’affichage de la page lorsque le customer est null. Au minimum, la page doit quand même s’afficher avec les informations du customer vides, puisqu’on n’a pas réussi à les récupérer.
 
-SELECT
-    TRUNC(PURGE_DATE) AS PURGE_DAY,
-    CASE_TYPE,
-    COUNT(*) AS NB_CASES_PURGEES
-FROM BCP_RETENTION_CASE
-WHERE PURGE_STATUS = 'PURGED'
-  AND PURGE_DATE IS NOT NULL
-GROUP BY
-    TRUNC(PURGE_DATE),
-    CASE_TYPE
-ORDER BY
-    PURGE_DAY DESC,
-    CASE_TYPE;
-
-Et par pays :
-
-SELECT
-    TRUNC(rc.PURGE_DATE) AS PURGE_DAY,
-    c.CODE AS COUNTRY,
-    COUNT(*) AS NB_CASES_PURGEES
-FROM BCP_RETENTION_CASE rc
-JOIN BCP_COUNTRY c
-    ON c.ID = rc.COUNTRY_ID
-WHERE rc.PURGE_STATUS = 'PURGED'
-  AND rc.PURGE_DATE IS NOT NULL
-GROUP BY
-    TRUNC(rc.PURGE_DATE),
-    c.CODE
-ORDER BY
-    PURGE_DAY DESC,
-    c.CODE;
+Dans ce cas, il est également normal d’avoir un message d’erreur indiquant que le tiers n’existe pas, puisque l’API n’a pas retourné de customer valide.
