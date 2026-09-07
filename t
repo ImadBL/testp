@@ -1,51 +1,58 @@
 ---
-@Override
-public CaseSearchResult findEligibleTbcCases(
-        int page,
-        int size
-) {
+@Transactional
+public int discover(int pageSize) {
 
-    log.info(
-            "AMX search for eligible TBC cases - page={}, size={}",
-            page,
-            size
-    );
+    int page = 0;
+    int count = 0;
+    boolean hasMore;
 
-    String query = buildTbcCriteria();
+    do {
 
-    FindCaseByCriteriaRequest request =
-            caseDataMapper.requestToFindCaseByCriteriaRequest(
-                    CaseEnum.TOCOMPLETE.getType(),
-                    CaseEnum.TOCOMPLETE.getVersion(),
-                    page * size,
-                    size,
-                    query
-            );
+        CaseSearchResult result =
+                amx.findEligibleTbcCases(
+                        page,
+                        pageSize
+                );
 
-    try {
+        if (result.cases().isEmpty()) {
+            break;
+        }
 
-        SearchResults result =
-                tibcoCaseService.findCaseByCriteria(request);
+        for (CaseInfo info : result.cases()) {
 
-        return new CaseSearchResult(
-                toCaseInfos(result),
-                result.isHasMoreResults()
-        );
+            if (repository.existsByCaseTypeAndCaseReference(
+                    CaseType.TBC,
+                    info.caseReference()
+            )) {
+                continue;
+            }
 
-    } catch (InternalServiceFault
-             | CaseDataAccessFault
-             | CaseModelReferenceFault
-             | SecurityFault e) {
+            Instant now = Instant.now();
 
-        log.error(
-                "Error while searching eligible TBC cases in AMX - page={}",
-                page,
-                e
-        );
+            RetentionCase retentionCase =
+                    RetentionCase.builder()
+                            .caseType(CaseType.TBC)
+                            .caseReference(info.caseReference())
+                            .caseIdentifier(info.caseIdentifier())
+                            .caseStatus(info.caseStatus())
+                            .eligible(true)
+                            .archiveCase(null)
+                            .purgeStatus(PurgeStatus.READY)
+                            .purgeAttemptCount(0)
+                            .createdAt(now)
+                            .updatedAt(now)
+                            .build();
 
-        throw new RuntimeException(
-                "Unable to search eligible TBC cases",
-                e
-        );
-    }
+            repository.save(retentionCase);
+
+            count++;
+        }
+
+        hasMore = result.hasMore();
+
+        page++;
+
+    } while (hasMore);
+
+    return count;
 }
