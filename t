@@ -1,58 +1,39 @@
 ---
-@Transactional
-public int discover(int pageSize) {
+@Entity
+@Table(name = "BCP_PURGE_REPORT")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PurgeReport {
 
-    int page = 0;
-    int count = 0;
-    boolean hasMore;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
+    private Long id;
 
-    do {
+    @Column(name = "PURGE_START_TIME", nullable = false)
+    private Instant purgeStartTime;
 
-        CaseSearchResult result =
-                amx.findEligibleTbcCases(
-                        page,
-                        pageSize
-                );
+    @Column(name = "PURGE_END_TIME")
+    private Instant purgeEndTime;
 
-        if (result.cases().isEmpty()) {
-            break;
-        }
+    @Column(name = "PAYOUT_PURGED")
+    private Long payoutPurged;
 
-        for (CaseInfo info : result.cases()) {
+    @Column(name = "CUSTOMER_SERVICE_PURGED")
+    private Long customerServicePurged;
 
-            if (repository.existsByCaseTypeAndCaseReference(
-                    CaseType.TBC,
-                    info.caseReference()
-            )) {
-                continue;
-            }
+    @Column(name = "TO_BE_COMPLETED_PURGED")
+    private Long toBeCompletedPurged;
 
-            Instant now = Instant.now();
+    @Column(name = "PAYOUT_PURGE_ERROR")
+    private Long payoutPurgeError;
 
-            RetentionCase retentionCase =
-                    RetentionCase.builder()
-                            .caseType(CaseType.TBC)
-                            .caseReference(info.caseReference())
-                            .caseIdentifier(info.caseIdentifier())
-                            .caseStatus(info.caseStatus())
-                            .eligible(true)
-                            .archiveCase(null)
-                            .purgeStatus(PurgeStatus.READY)
-                            .purgeAttemptCount(0)
-                            .createdAt(now)
-                            .updatedAt(now)
-                            .build();
+    @Column(name = "CUSTOMER_SERVICE_PURGE_ERROR")
+    private Long customerServicePurgeError;
 
-            repository.save(retentionCase);
-
-            count++;
-        }
-
-        hasMore = result.hasMore();
-
-        page++;
-
-    } while (hasMore);
-
-    return count;
+    @Column(name = "TO_BE_COMPLETED_PURGE_ERROR")
+    private Long toBeCompletedPurgeError;
 }
