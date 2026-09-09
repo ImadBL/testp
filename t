@@ -1,14 +1,4 @@
 ---
-private boolean isEmptyReport(PurgeReport report) {
+J’ai pushé les dernières modifications sur la branche develop. Comme tu peux le voir, le batch fonctionne bien : il supprime les lignes de RetentionCase et ajoute les rapports.
 
-    return value(report.getPayoutPurged()) == 0
-            && value(report.getCustomerServicePurged()) == 0
-            && value(report.getToBeCompletedPurged()) == 0
-            && value(report.getPayoutPurgeError()) == 0
-            && value(report.getCustomerServicePurgeError()) == 0
-            && value(report.getToBeCompletedPurgeError()) == 0;
-}
-
-private long value(Long value) {
-    return value == null ? 0L : value;
-}
+La limite actuelle est de 2 cases par opération, c’est pour ça que tu les vois traités 2 par 2.
