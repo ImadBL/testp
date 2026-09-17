@@ -1,6 +1,12 @@
----
-Hahaha, si tu veux faire tout ça, il faut compter au moins deux semaines de travail ! Je rajoute Laurent à la discussion pour que les choses soient claires : on n’a pas beaucoup de temps pour développer tout ça, et dès le début de la semaine prochaine, il faut se concentrer sur la transition.
+Bonjour,
 
-Pour le batch de purge, restons sur quelque chose de simple et basique : un tableau noir sur blanc, avec des colonnes début et fin, comme dans la table de la base de données. Pas besoin d’aller plus loin pour le moment.
+D’après les modifications que j’ai identifiées, deux sujets sont concernés : Microsoft Graph et la conversion en PDF.
 
-De mon côté, je ne pourrai pas t’aider à développer cette partie. Si tu souhaites faire tout ça, tu devras donc t’en charger seul. Et j’ai besoin de toi la semaine prochaine pour m’aider sur la transition, surtout pour l’installation et la configuration des postes de l’équipe en Inde.
+Pour Microsoft Graph, il faut d’abord vérifier que le fonctionnement reste identique à celui d’avant. Ce test ne pouvant pas être réalisé en local, il faudra déployer l’application sur un serveur pour le valider.
+
+Concernant la conversion en PDF, je ne peux pas encore donner d’estimation fiable. Cela pourrait prendre deux jours comme une semaine, selon les éventuels problèmes de compatibilité entre l’ancienne bibliothèque et la nouvelle.
+
+Dès que j’aurai un créneau la semaine prochaine, je pourrai effectuer un premier test pour identifier les éventuels problèmes et affiner l’estimation.
+
+Bonne journée,
+Imad
