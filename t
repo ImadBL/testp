@@ -1,18 +1,16 @@
-LocalDateTime cycleDateTime = LocalDateTime.of(cycleDate, time);
+LocalDateTime windowStart = purgeDate.atTime(startTime);           // 09/10 19:00
+LocalDateTime windowEnd = purgeDate.plusDays(1).atTime(endTime);   // 10/10 02:00
 
+@Query("""
+    select max(p.cycleNumber)
+    from PurgeProcess p
+    where p.startDate >= :windowStart
+      and p.startDate < :windowEnd
+""")
+Integer findMaxCycleNumberByWindow(
+        @Param("windowStart") LocalDateTime windowStart,
+        @Param("windowEnd") LocalDateTime windowEnd
+);
 
-public Integer getNextCycleNumber(LocalDateTime launchDateTime) {
-    if (launchDateTime.toLocalTime().isBefore(LocalTime.of(19, 0))) {
-        throw new IllegalStateException("Batch launched outside purge window");
-    }
-
-    LocalDateTime windowStart = launchDateTime.toLocalDate().atTime(19, 0);
-    LocalDateTime windowEnd = launchDateTime.toLocalDate().plusDays(1).atStartOfDay();
-
-    Integer maxCycleNumber = purgeProcessRepository.findMaxCycleNumberByWindow(
-            windowStart,
-            windowEnd
-    );
-
-    return maxCycleNumber == null ? 1 : maxCycleNumber + 1;
-}
+Integer maxCycleNumber = repository.findMaxCycleNumberByWindow(windowStart, windowEnd);
+int nextCycleNumber = maxCycleNumber == null ? 1 : maxCycleNumber + 1;
