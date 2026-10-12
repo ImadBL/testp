@@ -1,19 +1,61 @@
 ---
-public PurgeWindow resolvePurgeWindow(LocalDateTime launchDateTime) {
-    LocalTime launchTime = launchDateTime.toLocalTime();
+@Service
+public class PurgeCycleService {
 
-    LocalDate windowStartDate;
+    private final PurgeWindowProperties properties;
 
-    if (!launchTime.isBefore(LocalTime.of(19, 0))) {
-        windowStartDate = launchDateTime.toLocalDate();
-    } else if (launchTime.isBefore(LocalTime.of(2, 0))) {
-        windowStartDate = launchDateTime.toLocalDate().minusDays(1);
-    } else {
+    public PurgeCycleService(PurgeWindowProperties properties) {
+        this.properties = properties;
+    }
+
+    public LocalDate resolvePurgeDate(LocalDateTime launchDateTime) {
+        LocalTime launchTime = launchDateTime.toLocalTime();
+
+        LocalTime startTime = properties.getStartTime();
+        LocalTime endTime = properties.getEndTime();
+
+        if (isWindowCrossingMidnight(startTime, endTime)) {
+            if (!launchTime.isBefore(startTime)) {
+                return launchDateTime.toLocalDate();
+            }
+
+            if (launchTime.isBefore(endTime)) {
+                return launchDateTime.toLocalDate().minusDays(1);
+            }
+        } else {
+            if (!launchTime.isBefore(startTime) && launchTime.isBefore(endTime)) {
+                return launchDateTime.toLocalDate();
+            }
+        }
+
         throw new IllegalStateException("Batch launched outside purge window");
     }
 
-    LocalDateTime start = windowStartDate.atTime(19, 0);
-    LocalDateTime end = windowStartDate.plusDays(1).atTime(2, 0);
+    private boolean isWindowCrossingMidnight(LocalTime startTime, LocalTime endTime) {
+        return endTime.isBefore(startTime);
+    }
+}
 
-    return new PurgeWindow(start, end);
+
+@ConfigurationProperties(prefix = "purge.window")
+public class PurgeWindowProperties {
+
+    private LocalTime startTime;
+    private LocalTime endTime;
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
 }
