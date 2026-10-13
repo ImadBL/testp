@@ -1,14 +1,28 @@
-Bonjour à tous,
+Finalisation de la configuration du batch de purge
 
-Les tests réalisés en recette socle cet après-midi se sont bien déroulés, et j’ai également reçu les notifications de purge par email.
 
-J’ai remplacé temporairement les templates HTML développés par Tristan par des tableaux plus simples, car ils présentaient des problèmes de lisibilité et d’alignement. Vous trouverez les deux templates en pièces jointes pour vérification.
+Bonjour l’équipe DevOps,
+Je vous partage les éléments nécessaires pour finaliser la configuration du batch de purge.
+Les variables actuellement récupérées depuis le fichier .batch_profile sont les suivantes :
 
-J’ai retenu cette solution simple et rapide pour pouvoir poursuivre les tests avec Nathalie sans attendre.
+# Database
+BCP_DB_URL
+BCP_DB_USERNAME
+BCP_DB_PASSWORD
 
-Tristan, pourrais-tu corriger les décalages sur les templates initiaux ? Nous en rediscuterons au retour de Laurent pour décider de la version à conserver. En attendant, nous utiliserons les templates simplifiés.
+# JMS - non utilisé pour le moment
+BCP_JMS_URL
+BCP_JMS_USERNAME
+BCP_JMS_PASSWORD
 
-Comme convenu avec Nathalie, nous commencerons les tests demain matin.
+Les fichiers de configuration application.yml et logback-spring.xml sont directement inclus dans le JAR. Il n’est donc pas nécessaire de livrer un fichier de configuration séparé. Au démarrage de l’application, il faudra simplement passer le bon profil correspondant à l’environnement.
 
-Bonne soirée,
+Pour les tests, la branche à utiliser est :
+feat/purgeNotification
+
+Pourriez-vous finaliser la configuration des scripts, de la pipeline et du déploiement sur les différents serveurs ?
+De mon côté, j’ai commencé à effectuer des tests de déploiement manuellement en recette afin que nous puissions avancer sur les tests fonctionnels.
+Pouvez-vous également nous communiquer l’état d’avancement de votre côté ainsi que les éventuels points bloquants restants ?
+Merci d’avance.
+Cordialement,
 Imad
