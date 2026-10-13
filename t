@@ -1,3 +1,6 @@
-Pour ce ticket, si le problème vient du paramétrage des boîtes mail, celui-ci est géré par les équipes pays. Elles peuvent l’exporter, le modifier et le réimporter depuis l’interface d’administration. Il suffit donc de les guider pour appliquer la bonne configuration.
+Au démarrage, il suffit d’exécuter :
+source ~/.batch_profile
 
-Je transfère le ticket à Nathalie.
+afin que le script récupère correctement les variables définies dans le .batch_profile.
+Tu peux utiliser la branche ........ La version est déjà disponible et fonctionne sans problème : je l’ai livrée manuellement hier et je l’ai également lancée avec Java 21.
+Dans un premier temps, tu peux donc faire quelques tests de ton côté et me dire s’il manque quelque chose ou si tu rencontres un problème. Tu peux me ping sur Teams si besoin.
