@@ -1,3 +1,1 @@
-----
-I’ll assign this ticket to Issam, as we need to configure the rules that handle automatic qualification.
-No changes are needed on the UI side: these processes already exist, and Belgium and the Netherlands reuse the existing trades from the UK and France.
+D’après Philippe, nous ne pouvons pas effectuer les tests pour le moment, car il n’a pas encore terminé les scripts de démarrage du batch. Il faut donc attendre qu’il les finalise.
