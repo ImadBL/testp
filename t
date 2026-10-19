@@ -1,26 +1,16 @@
-public LocalDateTimeObjDTO resolvePurgeDate(LocalDateTime launchDateTime) {
-    LocalTime launchTime = launchDateTime.toLocalTime();
-    LocalTime startTime = properties.getStart();
-    LocalTime endTime = properties.getStopNewWork();
+Pipeline Issues – Artifactory Access and GitLab CI Configuration
 
-    boolean crossesMidnight =
-            isWindowCrossingMidnight(startTime, endTime);
+Hello,
 
-    LocalDate cycleDate = launchDateTime.toLocalDate();
+I would like to report two pipeline issues affecting two of our projects:
 
-    // Après minuit, rattacher le cycle à la veille
-    // tant que la fenêtre nocturne n'est pas terminée.
-    if (crossesMidnight && launchTime.isBefore(endTime)) {
-        cycleDate = cycleDate.minusDays(1);
-    }
+First project: The failure appears to be related to an issue accessing Artifactory.
 
-    LocalDateTime windowStart = cycleDate.atTime(startTime);
+Second project: I suspect a missing or incorrect pipeline configuration, as the build succeeds locally but fails in GitLab CI.
 
-    LocalDate endDate = crossesMidnight
-            ? cycleDate.plusDays(1)
-            : cycleDate;
+Could you please investigate these issues and help us identify the necessary fixes?
 
-    LocalDateTime windowEnd = endDate.atTime(endTime);
+Thank you for your support.
 
-    return new LocalDateTimeObjDTO(windowStart, windowEnd);
-}
+Best regards,
+Imad
