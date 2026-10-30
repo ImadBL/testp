@@ -1,9 +1,9 @@
 ----
 
-D’après Sami, le mécanisme de tolérance aux pannes permet de basculer automatiquement vers le serveur EMS secondaire en cas d’incident. Or, le batch est actuellement configuré pour se connecter uniquement au serveur principal. Selon lui, le retour sur le serveur principal devrait avoir lieu au prochain redémarrage, lundi.
+ the fault tolerance mechanism automatically switches over to the secondary EMS server in the event of a failure. However, the batch is currently configured to connect only to the primary server. The system is expected to switch back to the primary server at the next restart, scheduled for Monday.
 
-Deux solutions sont donc possibles :
+We therefore have two options:
 
-Conserver la configuration actuelle et attendre lundi : le batch devrait alors reprendre son fonctionnement normal.
+Keep the current configuration and wait until Monday, when the batch should resume normal operation.
 
-Ajouter l’URL du serveur EMS secondaire dans la configuration du batch pour gérer cette bascule. Cette modification nécessite un redéploiement du batch.
+Add the secondary EMS server URL to the batch configuration to handle this failover. This change requires redeploying the batch.
